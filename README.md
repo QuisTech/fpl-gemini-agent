@@ -1,62 +1,51 @@
-# FPL Strategist: Grand Cru Edition 🍷
+# FPL Optimizer (V3)
 
-A high-fidelity Fantasy Premier League decision support tool using Linear Programming (Simplex Algorithm) for squad optimization and 3-GW rolling expected points analysis.
+An elite Fantasy Premier League (FPL) optimization engine that uses a **Multi-Horizon Beam Search** and **Linear Programming (LP)** to project the absolute mathematical optimum for your squad across multiple gameweeks.
 
-> [!IMPORTANT]
-> This application is designed to move beyond "casual" play by utilizing three distinct risk-mode engines to optimize for either stability, rank-climbing, or budget efficiency.
+## 🚀 The V3 Architecture
 
-## 🧠 The Optimization Engine (`api/index.ts`)
-The core of the app is a **Linear Programming Solver** that maximizes the `score` function subject to the following constraints:
-- **Budget**: Total squad cost must be ≤ £100m.
-- **Formation**: Enforces `2 GKP`, `5 DEF`, `5 MID`, `3 FWD`.
-- **Team Limit**: Maximum 3 players from any single Premier League team.
-- **Starting XI**: Enforces valid match-day formations (e.g., Min 3 DEF, 1 FWD).
+Unlike traditional FPL tools that only look at the immediate upcoming gameweek, the V3 Engine simulates multiple gameweeks into the future. It traverses thousands of potential squad states, evaluating the mathematical Expected Value (EV) of free transfers, points hits, and chip usage.
 
-### ⚔️ Strategy Modes
-The engine operates in three distinct modes, toggled via the UI:
+### 🧠 The Core Components
+1. **The Multi-Horizon Simulator (`api/simulator.ts`)**
+   - Implements a Beam Search algorithm to explore the massive combinatorial tree of future Gameweeks.
+   - Natively understands FPL constraints (Budget limits, 2/5/5/3 positional rules).
+   - Tracks the **Chip State Machine**, allowing it to autonomously decide when to play `Wildcard`, `Free Hit`, `Bench Boost`, or `Triple Captain`.
 
-| Mode | Philosophy | Key Multiplier |
-| :--- | :--- | :--- |
-| **SAFE** | **Rank Protection**. Follows the "Template" to minimize downside. | Standard Scoring |
-| **RISKY** | **Rank Climbing**. Targets low-ownership differentials (<10%). | **1.25x Differential Boost** |
-| **VALUE** | **ROI Scouting**. Returns to pure Points-Per-Million efficiency. | Zero Multipliers |
+2. **The LP Solver (`api/lp-solver.ts`)**
+   - Built on `javascript-lp-solver`.
+   - Used heavily during `Wildcard` and `Free Hit` simulation branches. When a chip is played in a simulated future, the Simulator passes the exact available budget to the LP Solver, which instantly returns the mathematically perfect 15-man squad for that Gameweek horizon.
 
----
+3. **The Autonomous Oracle (`scripts/fetch-xp.ts` & `scripts/check-deadline.ts`)**
+   - The engine is powered by Expected Points (xP) data ingested from FPLForm.
+   - We utilize a **"Sniper Bot"** GitHub Action (`.github/workflows/sniper-fetch.yml`). 
+   - Every hour, the bot checks the Official FPL API for the upcoming deadline. Exactly 1-2 hours before the deadline (after all press conferences and leaks), it fires up a headless Playwright browser, scrapes the freshest xP data, and commits it back to the repository autonomously.
 
-## 🚀 Key Features
-- **Premium Player Protection**: Implements a tiered scoring boost for elite assets (£10m+: 15%, £8m+: 8%) to ensure the engine doesn't drop elite players for "budget traps."
-- **Performance Tracking**: A built-in "Snapshot" system using `localStorage` to archive squad predictions and compare them against live FPL data.
-- **Dynamic UA Rotation**: Rotating User-Agents to ensure high uptime and prevent API rate-limiting from FPL servers.
-- **Strategic Chip Advisor**: Real-time advice on Wildcard, Free Hit, and Triple Captain usage based on current squad strength.
+## ⚙️ Running Locally
 
----
-
-## 🛠️ Tech Stack
-- **Frontend**: Vite + React 19 + Framer Motion (Aesthetics)
-- **State Management**: Custom `useFPLData` hook with persistence.
-- **Backend API**: Vercel Serverless Functions (Node.js/TypeScript).
-- **Validation**: Zod-driven schema validation for all FPL API responses.
-- **Styling**: Vanilla CSS with modern "Glassmorphism" aesthetics.
-
----
-
-## 📂 Repository Structure (For Agents)
-- `api/index.ts`: **The Brain**. Contains `FPLService` which handles scoring, optimization, and API communication.
-- `src/hooks/useFPLData.ts`: **The Heart**. Manages historical snapshots, live point fetching, and global state.
-- `src/components/PerformanceView.tsx`: **The Judge**. Visualizes the "Expected vs Actual" results for each strategy.
-- `src/components/PitchView.tsx`: The primary interaction layer for squad visualization.
-
----
-
-## 🏗️ Local Development
+1. Install dependencies:
 ```bash
-# Install dependencies
 npm install
+```
 
-# Run dev server
+2. Run the development server:
+```bash
 npm run dev
 ```
-Accessible at `http://localhost:3000`.
 
-> [!TIP]
-> To modify the scoring logic (e.g., changing the weight of "Form" vs "xG"), search for `calculatePlayerScore` in `api/index.ts`.
+3. Test the V3 Engine locally (without spinning up the frontend):
+```bash
+npx tsx test_api.ts
+```
+
+## ☁️ Vercel Deployment
+
+This project is perfectly tuned for Vercel. Because Vercel serverless functions have strict execution time limits, the Simulator automatically scales its `beamWidth` and `maxDepth` based on the environment to ensure it always returns a result before the Vercel timeout.
+
+To deploy manually:
+```bash
+npx vercel --prod
+```
+
+## 🤝 Using "Elite 1000" EO Data
+To take the optimization to the next level, you can manually input FPLReview "Elite 1000" Effective Ownership (EO) data into the Oracle. This allows the Engine to calculate **Risk Penalties**. If a player has >100% Elite EO, the Engine knows that *not* owning them is a mathematical rank risk, and will adjust its transfers accordingly.
