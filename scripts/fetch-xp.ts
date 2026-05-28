@@ -110,7 +110,14 @@ async function fetchFPLReview(browser: any) {
   console.log('[Fetcher] Launching Headless Browser to test BOTH data sources...');
   const browser = await chromium.launch({ headless: true });
 
-  const fplFormSuccess = await fetchFPLForm(browser);
+  let fplFormSuccess = false;
+  for (let i = 1; i <= 3; i++) {
+    fplFormSuccess = await fetchFPLForm(browser);
+    if (fplFormSuccess) break;
+    console.log(`[Retry] FPLForm fetch failed. Retrying in 10 seconds... (Attempt ${i}/3)`);
+    await new Promise(r => setTimeout(r, 10000));
+  }
+
   const fplReviewSuccess = await fetchFPLReview(browser);
 
   await browser.close();
@@ -118,4 +125,9 @@ async function fetchFPLReview(browser: any) {
   console.log('\n--- Final Fetch Report ---');
   console.log(`FPLForm: ${fplFormSuccess ? '✅ SUCCESS' : '❌ FAILED'}`);
   console.log(`FPLReview: ${fplReviewSuccess ? '✅ SUCCESS' : '❌ FAILED'}`);
+
+  if (!fplFormSuccess) {
+    console.error('CRITICAL: FPLForm data could not be fetched after 3 retries.');
+    process.exit(1); 
+  }
 })();
