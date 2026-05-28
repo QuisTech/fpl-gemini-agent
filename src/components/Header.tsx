@@ -13,8 +13,12 @@ export const Header = ({ data, riskMode, setRiskMode }: HeaderProps) => {
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 bg-fpl-purple rounded flex items-center justify-center font-black text-xl text-white shadow-lg shadow-fpl-purple/20">F</div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">FPL <span className="text-fpl-green">OPTIMIZER</span></h1>
-          <p className="text-[10px] text-slate-500 font-light uppercase tracking-widest">Decision Support Panel</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">FPL <span className="text-fpl-green">OPTIMIZER</span></h1>
+            <span className="bg-fpl-pink text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm shadow-fpl-pink/20">V3</span>
+            <span className="bg-slate-900 text-cyan-400 text-[8px] font-mono px-2 py-0.5 rounded border border-cyan-500/20">MULTI-GW SIMULATION</span>
+          </div>
+          <p className="text-[10px] text-slate-500 font-light uppercase tracking-widest">Multi-Horizon Simulation Engine</p>
         </div>
       </div>
 

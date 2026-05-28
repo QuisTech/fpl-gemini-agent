@@ -5,7 +5,7 @@ const FPL_BASE_URL = 'https://fantasy.premierleague.com/api/bootstrap-static/';
 (async () => {
   try {
     const response = await fetch(FPL_BASE_URL);
-    const data = await response.json();
+    const data = await response.json() as any;
     
     // Find the next upcoming gameweek
     const nextEvent = data.events.find((e: any) => e.is_next);
