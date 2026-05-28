@@ -69,10 +69,8 @@ export class Simulator {
   public generateValidActions(state: SquadState, oracle: XPOracle, gw: number): Action[] {
     const actions: Action[] = [];
     
-    // 1. Always consider rolling
-    if (state.freeTransfers < 5) {
-      actions.push({ type: 'ROLL', hitCost: 0 });
-    }
+    // 1. Always consider rolling (doing nothing)
+    actions.push({ type: 'ROLL', hitCost: 0 });
 
     // 2. Consider Chips
     if (state.chipState['WC'] > 0) {
