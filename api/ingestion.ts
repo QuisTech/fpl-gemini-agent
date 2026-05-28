@@ -22,11 +22,11 @@ export class CSVOracle implements XPOracle {
   private playerTeams: Record<number, string> = {};
   private allIds: number[] = [];
 
-  constructor(filePath: string, players: any[] = []) {
-    this.loadData(filePath, players);
+  constructor(filePath: string, players: any[] = [], riskMode: string = 'safe') {
+    this.loadData(filePath, players, riskMode);
   }
 
-  private loadData(filePath: string, players: any[]) {
+  private loadData(filePath: string, players: any[], riskMode: string) {
     const fullPath = path.resolve(process.cwd(), filePath);
     if (!fs.existsSync(fullPath)) {
       console.warn(`[CSVOracle] Data file not found at ${fullPath}`);
@@ -51,14 +51,36 @@ export class CSVOracle implements XPOracle {
         
         // Match player name to real FPL ID
         let fplId = syntheticId++; 
+        let rawOwnership = 100.0; // default safe value
         if (players.length > 0) {
           const match = players.find(p => 
-            p.web_name.toLowerCase() === playerName.toLowerCase() ||
-            p.second_name.toLowerCase().includes(playerName.toLowerCase()) ||
-            playerName.toLowerCase().includes(p.second_name.toLowerCase()) ||
-            playerName.toLowerCase().includes(p.web_name.toLowerCase())
+            p.web_name?.toLowerCase() === playerName.toLowerCase() ||
+            p.second_name?.toLowerCase().includes(playerName.toLowerCase()) ||
+            playerName.toLowerCase().includes(p.second_name?.toLowerCase()) ||
+            playerName.toLowerCase().includes(p.web_name?.toLowerCase())
           );
-          if (match) fplId = match.id;
+          if (match) {
+            fplId = match.id;
+            rawOwnership = parseFloat(match.selected_by_percent) || 100.0;
+          }
+        }
+        
+        let adjustedMerit = meritScore;
+
+        // Apply Strategy Mode Logic
+        if (riskMode !== 'value') {
+          // Risky Mode: Boost massive differentials (< 5% ownership)
+          if (riskMode === 'aggressive' && rawOwnership < 5.0) {
+            adjustedMerit *= 1.25; 
+          }
+          
+          // Premium Captaincy Protection: Expensive players are captained often
+          const costInMillions = cost / 10;
+          if (costInMillions >= 10.0) {
+            adjustedMerit *= 1.15;
+          } else if (costInMillions >= 8.0) {
+            adjustedMerit *= 1.08;
+          }
         }
 
         this.playerNames[fplId] = playerName;
@@ -69,7 +91,7 @@ export class CSVOracle implements XPOracle {
         
         this.xpMatrix[fplId] = {};
         for (let gw = 1; gw <= 8; gw++) {
-           this.xpMatrix[fplId][gw] = Math.max(0, meritScore - (gw * 0.05)); 
+           this.xpMatrix[fplId][gw] = Math.max(0, adjustedMerit - (gw * 0.05)); 
         }
       }
     }

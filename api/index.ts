@@ -285,7 +285,7 @@ export class FPLService {
     // 2. Initialize the V3 Engine (Oracle + Simulator)
     // We try to load the autonomous fplform data, fallback to empty if missing
     // Pass baseData.players so the Oracle can map FPLForm names to real FPL IDs
-    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players);
+    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players, riskMode);
     const simulator = new Simulator(true); // Vercel mode = true
     
     const initialState = {
