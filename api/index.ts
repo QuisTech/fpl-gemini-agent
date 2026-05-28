@@ -45,16 +45,16 @@ export class FPLService {
     };
   }
 
-  private static async fetchWithRetry(url: string, retries = 3): Promise<any> {
+  private static async fetchWithRetry(url: string, retries = 1): Promise<any> {
     for (let i = 0; i < retries; i++) {
       try {
-        const config = { headers: this.getHeaders(), timeout: 15000 };
+        const config = { headers: this.getHeaders(), timeout: 5000 };
         const res = await axios.get(url, config);
         return res;
       } catch (err: any) {
         console.warn(`[FPL API] Attempt ${i + 1}/${retries} failed for ${url}: ${err.response?.status || err.message}`);
         if (i < retries - 1) {
-          await new Promise(r => setTimeout(r, 1000 * (i + 1))); // 1s, 2s backoff
+          await new Promise(r => setTimeout(r, 500)); 
         } else {
           throw err;
         }
