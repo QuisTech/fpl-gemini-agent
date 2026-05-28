@@ -22,11 +22,11 @@ export class CSVOracle implements XPOracle {
   private playerTeams: Record<number, string> = {};
   private allIds: number[] = [];
 
-  constructor(filePath: string) {
-    this.loadData(filePath);
+  constructor(filePath: string, players: any[] = []) {
+    this.loadData(filePath, players);
   }
 
-  private loadData(filePath: string) {
+  private loadData(filePath: string, players: any[]) {
     const fullPath = path.resolve(process.cwd(), filePath);
     if (!fs.existsSync(fullPath)) {
       console.warn(`[CSVOracle] Data file not found at ${fullPath}`);
@@ -36,7 +36,7 @@ export class CSVOracle implements XPOracle {
     const fileContent = fs.readFileSync(fullPath, 'utf-8');
     const lines = fileContent.split('\n');
 
-    let syntheticId = 1;
+    let syntheticId = 9000;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -46,10 +46,21 @@ export class CSVOracle implements XPOracle {
         const playerName = cols[1];
         const team = cols[3];
         const pos = cols[4];
-        const cost = parseFloat(cols[5]) * 10; // FPL costs are stored as integer (e.g. 104 instead of 10.4)
+        const cost = parseFloat(cols[5]) * 10; 
         const meritScore = parseFloat(cols[6]) || 0; 
         
-        const fplId = syntheticId++; 
+        // Match player name to real FPL ID
+        let fplId = syntheticId++; 
+        if (players.length > 0) {
+          const match = players.find(p => 
+            p.web_name.toLowerCase() === playerName.toLowerCase() ||
+            p.second_name.toLowerCase().includes(playerName.toLowerCase()) ||
+            playerName.toLowerCase().includes(p.second_name.toLowerCase()) ||
+            playerName.toLowerCase().includes(p.web_name.toLowerCase())
+          );
+          if (match) fplId = match.id;
+        }
+
         this.playerNames[fplId] = playerName;
         this.playerPositions[fplId] = pos;
         this.playerCosts[fplId] = cost;

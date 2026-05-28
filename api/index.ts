@@ -7,6 +7,8 @@ import {
   FPLPlayerSchema, FPLTeamSchema, FPLFixtureSchema,
   RecommendationResponse, TeamSyncResponse, TransferRecommendation, ChipAdvice
 } from './types.js';
+import { CSVOracle } from './ingestion.js';
+import { Simulator } from './simulator.js';
 
 const FPL_BASE_URL = "https://fantasy.premierleague.com/api";
 
@@ -281,11 +283,9 @@ export class FPLService {
     }).filter(Boolean) as ScoredPlayer[];
 
     // 2. Initialize the V3 Engine (Oracle + Simulator)
-    const { CSVOracle } = await import('./ingestion.js');
-    const { Simulator } = await import('./simulator.js');
-    
     // We try to load the autonomous fplform data, fallback to empty if missing
-    const oracle = new CSVOracle('data/fplform_scraped.csv');
+    // Pass baseData.players so the Oracle can map FPLForm names to real FPL IDs
+    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players);
     const simulator = new Simulator(true); // Vercel mode = true
     
     const initialState = {
