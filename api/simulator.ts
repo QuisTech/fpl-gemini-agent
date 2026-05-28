@@ -1,5 +1,5 @@
-import { XPOracle } from './ingestion';
-import { solveOptimalSquad } from './lp-solver';
+import { XPOracle } from './ingestion.js';
+import { solveOptimalSquad } from './lp-solver.js';
 
 export interface SquadState {
   squad: number[]; // Array of 15 player IDs
