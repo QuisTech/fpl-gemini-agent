@@ -146,52 +146,61 @@ export const TransferView = ({ syncedData }: TransferViewProps) => {
                         i === 0 ? "bg-gradient-to-r from-fpl-green to-fpl-purple" : "bg-transparent group-hover:bg-slate-800"
                       )} />
 
-                      <div className="flex items-center justify-between gap-4">
-                        {/* Outgoing Player */}
-                        <div className="flex-1 flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-rose-950/20 border border-rose-500/30 flex items-center justify-center text-rose-500 group-hover:scale-105 transition-transform">
-                            <UserMinus className="w-4 h-4" />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                        {/* Left/Main Side: The Swap */}
+                        <div className="flex items-center justify-between flex-grow gap-2">
+                          {/* Outgoing Player */}
+                          <div className="flex items-center gap-2 max-w-[45%]">
+                            <div className="w-7 h-7 rounded-lg bg-rose-950/20 border border-rose-500/30 flex items-center justify-center text-rose-500 shrink-0">
+                              <UserMinus className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[8px] text-rose-500 font-bold uppercase tracking-wider">Out</span>
+                              <span className="text-xs font-black text-slate-200 truncate">{rec.out.web_name}</span>
+                              <span className="text-[9px] text-slate-500 uppercase truncate">{rec.out.team_short_name} • £{(rec.out.now_cost/10).toFixed(1)}m</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[8px] text-rose-500 font-bold uppercase tracking-wider">Out</span>
-                            <span className="text-xs font-black text-slate-200">{rec.out.web_name}</span>
-                            <span className="text-[9px] text-slate-500 uppercase">{rec.out.team_short_name} • £{(rec.out.now_cost/10).toFixed(1)}m</span>
+
+                          {/* Arrow Icon */}
+                          <div className="flex items-center justify-center shrink-0">
+                            <ArrowRightCircle className={cn(
+                              "w-4 h-4 transition-all duration-300",
+                              isHovered ? "text-fpl-green scale-110" : "text-slate-700"
+                            )} />
+                          </div>
+
+                          {/* Incoming Player */}
+                          <div className="flex items-center justify-end gap-2 max-w-[45%] text-right">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[8px] text-fpl-green font-bold uppercase tracking-wider">In</span>
+                              <span className="text-xs font-black text-slate-200 truncate">{rec.in.web_name}</span>
+                              <span className="text-[9px] text-slate-500 uppercase truncate">£{(rec.in.now_cost/10).toFixed(1)}m • {rec.in.team_short_name}</span>
+                            </div>
+                            <div className="w-7 h-7 rounded-lg bg-fpl-green/10 border border-fpl-green/30 flex items-center justify-center text-fpl-green shrink-0">
+                              <UserPlus className="w-3.5 h-3.5" />
+                            </div>
                           </div>
                         </div>
 
-                        {/* Arrow direction with action role indicator */}
-                        <div className="flex flex-col items-center justify-center min-w-[80px]">
-                          <ArrowRightCircle className={cn(
-                            "w-5 h-5 transition-all duration-300",
-                            isHovered ? "text-fpl-green scale-110" : "text-slate-700"
-                          )} />
+                        {/* Right/Info Side: Role and xP Gain */}
+                        <div className="flex items-center justify-between sm:justify-end gap-4 border-t border-slate-900 pt-2 sm:pt-0 sm:border-0 shrink-0">
+                          {/* Role Badge */}
                           <span className={cn(
-                            "text-[8px] font-black uppercase tracking-wider mt-1 px-2 py-0.5 rounded-full text-center max-w-[140px] truncate",
+                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full text-center truncate",
                             roleStyle
                           )}>
                             {roleText}
                           </span>
-                        </div>
 
-                        {/* Incoming Player */}
-                        <div className="flex-1 flex items-center justify-end gap-3 text-right">
-                          <div className="flex flex-col">
-                            <span className="text-[8px] text-fpl-green font-bold uppercase tracking-wider">In</span>
-                            <span className="text-xs font-black text-slate-200">{rec.in.web_name}</span>
-                            <span className="text-[9px] text-slate-500 uppercase">£{(rec.in.now_cost/10).toFixed(1)}m • {rec.in.team_short_name}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-px h-8 bg-slate-800/80 hidden sm:block"></div>
+                            <div className="flex flex-col items-end sm:items-center justify-center min-w-[60px]">
+                              <span className="text-sm sm:text-lg font-black text-fpl-green flex items-center gap-0.5">
+                                +{rec.scoreJump.toFixed(1)}
+                              </span>
+                              <span className="text-[8px] text-slate-500 font-bold uppercase">xP Gain</span>
+                            </div>
                           </div>
-                          <div className="w-8 h-8 rounded-lg bg-fpl-green/10 border border-fpl-green/30 flex items-center justify-center text-fpl-green group-hover:scale-105 transition-transform">
-                            <UserPlus className="w-4 h-4" />
-                          </div>
-                        </div>
-
-                        {/* Score Jump / Gain Column */}
-                        <div className="w-px h-10 bg-slate-800/80 hidden sm:block"></div>
-                        <div className="flex flex-col items-center justify-center min-w-[70px]">
-                          <span className="text-lg font-black text-fpl-green flex items-center gap-0.5">
-                            +{rec.scoreJump.toFixed(1)}
-                          </span>
-                          <span className="text-[8px] text-slate-500 font-bold uppercase">xP Gain</span>
                         </div>
                       </div>
 

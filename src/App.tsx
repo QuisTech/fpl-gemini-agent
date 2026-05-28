@@ -57,7 +57,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-[#f8fafc] p-6 font-sans">
+    <div className="min-h-screen bg-[#020617] text-[#f8fafc] p-4 sm:p-6 font-sans">
       {error && (
         <div className="max-w-[1400px] mx-auto mb-4 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-400 text-xs font-mono">
           <span className="font-bold uppercase mr-2">[Engine Error]:</span> {error}
@@ -74,44 +74,46 @@ export default function App() {
         <div className="col-span-12 lg:col-span-6 bg-card-bg border border-fpl-border rounded-3xl overflow-hidden relative shadow-xl min-h-[600px]">
           <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.1) 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.1) 40px)` }}></div>
           
-          <div className="relative z-10 p-6 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex space-x-1 bg-slate-950 p-1 rounded-xl border border-fpl-border">
+          <div className="relative z-10 p-4 sm:p-6 h-full flex flex-col">
+            <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between mb-8">
+              <div className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-xl border border-fpl-border w-full md:w-auto justify-center">
                 {(['pitch', 'picks', 'transfers', 'chips', 'performance'] as const).map((t) => (
                   <button 
                     key={t}
                     onClick={() => setTab(t)}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                      "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all",
                       tab === t ? "bg-slate-800 text-white" : "text-slate-500 hover:text-slate-300"
                     )}
                   >{t}</button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full md:w-auto">
                 {tab === 'pitch' && data && (
                   <button 
                     onClick={handleSnapshot}
-                    className="flex items-center gap-2 bg-slate-900 border border-fpl-border rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all mr-4"
+                    className="flex items-center gap-2 bg-slate-900 border border-fpl-border rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all mr-2 sm:mr-4"
                   >
                     <Camera className="w-3 h-3 text-fpl-green" />
                     Snapshot
                   </button>
                 )}
-                <input 
-                  type="text" 
-                  placeholder="TEAM ID" 
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  className="bg-slate-950 border border-fpl-border rounded-lg px-3 py-1 text-[10px] font-mono text-fpl-green w-24 focus:outline-none focus:border-fpl-green"
-                />
-                <button 
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className="bg-fpl-purple hover:bg-fpl-purple/80 disabled:opacity-50 text-white text-[10px] font-black px-3 py-1 rounded-lg transition-colors"
-                >
-                  {syncing ? 'SYNCING...' : 'SYNC TEAM'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="TEAM ID" 
+                    value={teamId}
+                    onChange={(e) => setTeamId(e.target.value)}
+                    className="bg-slate-950 border border-fpl-border rounded-lg px-3 py-1 text-[10px] font-mono text-fpl-green w-24 focus:outline-none focus:border-fpl-green"
+                  />
+                  <button 
+                    onClick={handleSync}
+                    disabled={syncing}
+                    className="bg-fpl-purple hover:bg-fpl-purple/80 disabled:opacity-50 text-white text-[10px] font-black px-3 py-1 rounded-lg transition-colors"
+                  >
+                    {syncing ? 'SYNCING...' : 'SYNC TEAM'}
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -76,7 +76,7 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
         const modes = history[gwId];
         return (
           <div key={gwId} className="bg-slate-950/40 border border-fpl-border rounded-2xl p-5">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <h3 className="text-sm font-black text-white flex items-center gap-2">
                 <Award className="w-4 h-4 text-fpl-green" />
                 GAMEWEEK {gwId} PERFORMANCE
@@ -84,7 +84,7 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
               <button 
                 onClick={() => refreshActuals(gwId)}
                 disabled={loading[gwId]}
-                className="text-[9px] font-black uppercase tracking-widest bg-fpl-purple px-3 py-1 rounded-lg hover:bg-fpl-purple/80 transition-colors disabled:opacity-50"
+                className="text-[9px] font-black uppercase tracking-widest bg-fpl-purple px-3 py-1 rounded-lg hover:bg-fpl-purple/80 transition-colors disabled:opacity-50 w-full sm:w-auto"
               >
                 {loading[gwId] ? 'FETCHING...' : 'REFRESH ACTUALS'}
               </button>
@@ -123,28 +123,28 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
                       </button>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-8">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-6">
                       <div>
                         <p className="text-[8px] text-slate-500 uppercase font-medium">Expected</p>
-                        <p className="text-lg font-black text-white">{normalizedXP.toFixed(1)} <span className="text-[10px] font-normal text-slate-500">xP</span></p>
+                        <p className="text-sm sm:text-lg font-black text-white">{normalizedXP.toFixed(1)} <span className="text-[9px] sm:text-[10px] font-normal text-slate-500">xP</span></p>
                       </div>
                       
                       <div>
-                        <p className="text-[8px] text-slate-500 uppercase font-medium">Actual Result</p>
-                        <p className="text-lg font-black text-white">
+                        <p className="text-[8px] text-slate-500 uppercase font-medium">Actual</p>
+                        <p className="text-sm sm:text-lg font-black text-white">
                           {actualScores[gwId] ? actual.toFixed(0) : '--'}
-                          <span className="text-[10px] font-normal text-slate-500 ml-1">pts</span>
+                          <span className="text-[9px] sm:text-[10px] font-normal text-slate-500 ml-1">pts</span>
                         </p>
                       </div>
 
                       <div className="flex flex-col justify-center">
                         {hasStarted ? (
                           <div className={cn(
-                            "flex items-center gap-1 text-[10px] font-black",
+                            "flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-[10px] font-black",
                             diff >= 0 ? "text-fpl-green" : "text-fpl-pink"
                           )}>
-                            <TrendingUp className={cn("w-3 h-3", diff < 0 && "rotate-180")} />
-                            {diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)} vs xP
+                            <TrendingUp className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3", diff < 0 && "rotate-180")} />
+                            {diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)} <span className="hidden sm:inline">vs xP</span>
                           </div>
                         ) : (
                           <span className="text-[8px] text-slate-600 font-mono uppercase tracking-tighter">
@@ -155,7 +155,7 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
                     </div>
 
                     {isExpanded && data.players && (
-                      <div className="mt-4 pt-4 border-t border-fpl-border grid grid-cols-2 gap-x-6 gap-y-2">
+                      <div className="mt-4 pt-4 border-t border-fpl-border grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                         {data.players.map((p: any) => (
                           <div key={p.id} className="flex justify-between items-center">
                             <div className="flex items-center gap-2">

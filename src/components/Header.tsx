@@ -9,11 +9,11 @@ interface HeaderProps {
 
 export const Header = ({ data, riskMode, setRiskMode }: HeaderProps) => {
   return (
-    <header className="col-span-12 flex items-center justify-between mb-4">
+    <header className="col-span-12 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-fpl-purple rounded flex items-center justify-center font-black text-xl text-white shadow-lg shadow-fpl-purple/20">F</div>
+        <div className="w-10 h-10 bg-fpl-purple rounded flex items-center justify-center font-black text-xl text-white shadow-lg shadow-fpl-purple/20 shrink-0">F</div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight">FPL <span className="text-fpl-green">OPTIMIZER</span></h1>
             <span className="bg-fpl-pink text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm shadow-fpl-pink/20">V3</span>
             <span className="bg-slate-900 text-cyan-400 text-[8px] font-mono px-2 py-0.5 rounded border border-cyan-500/20">MULTI-GW SIMULATION</span>
@@ -22,7 +22,7 @@ export const Header = ({ data, riskMode, setRiskMode }: HeaderProps) => {
         </div>
       </div>
 
-      <div className="flex items-center gap-6 bg-card-bg/50 p-2 rounded-xl border border-fpl-border">
+      <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 bg-card-bg/50 p-2 rounded-xl border border-fpl-border w-full sm:w-auto">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-widest text-slate-400 text-right font-medium">Strategy Mode</span>
           <div className="flex items-center gap-2 bg-slate-950 p-1 rounded mt-1">
