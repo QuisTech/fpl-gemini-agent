@@ -305,12 +305,7 @@ export class FPLService {
     // We will look at the immediate next step in the best trajectory
     let optimalFirstMove = 'ROLL';
     if (bestFutures.length > 0) {
-      const bestFuture = bestFutures[0];
-      if (bestFuture.activeChip) {
-        optimalFirstMove = bestFuture.activeChip;
-      } else if (bestFuture.freeTransfers < initialState.freeTransfers) {
-        optimalFirstMove = 'TRANSFER';
-      }
+      optimalFirstMove = bestFutures[0].firstAction || 'ROLL';
     }
 
     const recommendations = await this.getRecommendations(riskMode);
