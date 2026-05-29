@@ -8,7 +8,7 @@ interface FixtureListProps {
 export const FixtureList = ({ data }: FixtureListProps) => {
   return (
     <div className="bg-card-bg border border-fpl-border rounded-3xl p-5 shadow-sm">
-      <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Next Fixtures</h2>
+      <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Fixture Ticker</h2>
       <div className="space-y-4">
         {data?.squad?.slice(0, 5).map(p => (
           <div key={p.id} className="flex flex-col gap-1.5">
@@ -35,7 +35,7 @@ export const FixtureList = ({ data }: FixtureListProps) => {
       {/* Optimization Note */}
       <div className="mt-6 p-2 bg-slate-950 rounded-xl border border-fpl-border">
         <div className="text-[9px] text-slate-500 uppercase mb-1 font-black tracking-widest">Logic Engine</div>
-        <p className="text-[10px] leading-tight text-slate-400 italic">Expected points maximized using 3-GW aggregate weighting.</p>
+        <p className="text-[10px] leading-tight text-slate-400 italic">Expected points maximized via multi-horizon beam search simulation.</p>
       </div>
     </div>
   );
