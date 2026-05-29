@@ -68,7 +68,7 @@ export class CSVOracle implements XPOracle {
       if (cols.length > 10 && cols[3] && cols[3].length === 3) {
         const playerName = cols[1];
         const team = cols[3];
-        const pos = cols[4];
+        const pos = cols[4] === 'GK' ? 'GKP' : cols[4];
         const cost = parseFloat(cols[5]) * 10; 
         const meritScore = parseFloat(cols[6]) || 0; 
         
@@ -195,7 +195,10 @@ export class CSVOracle implements XPOracle {
   getVariance(playerId: number, gameweek: number): number { return this.varianceMatrix[playerId]?.[gameweek] || 0; }
   getPriceDelta(playerId: number): number { return 0; }
   getFixtures(gameweek: number): any[] { return []; }
-  getPosition(playerId: number): string { return this.playerPositions[playerId]; }
+  getPosition(playerId: number): string {
+    const pos = this.playerPositions[playerId];
+    return pos === 'GK' ? 'GKP' : pos;
+  }
   getCost(playerId: number): number { return this.playerCosts[playerId]; }
   getTeam(playerId: number): string { return this.playerTeams[playerId]; }
   getAllPlayerIds(): number[] { return this.allIds; }
