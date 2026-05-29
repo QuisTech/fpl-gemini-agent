@@ -83,7 +83,7 @@ async function run() {
     
     // 3. Scan picks for all managers in batches
     const playerTallies: Record<number, { ownership: number; started: number; captain: number; tripleCaptain: number; totalMultiplier: number }> = {};
-    let scannedCount = 0;
+    let effectiveManagers = 0;
     let failedCount = 0;
     
     console.log(`[Top 1K Fetcher] Fetching picks for GW${currentGW} in batches of ${BATCH_SIZE}...`);
@@ -119,7 +119,7 @@ async function run() {
               }
               playerTallies[pId].totalMultiplier += multiplier;
             });
-            scannedCount++;
+            effectiveManagers++;
           } else {
             failedCount++;
           }
@@ -139,7 +139,7 @@ async function run() {
       await sleep(BATCH_DELAY_MS);
     }
     
-    console.log(`[Top 1K Fetcher] Scan Complete. Scanned: ${scannedCount}, Failed: ${failedCount}`);
+    console.log(`[Top 1K Fetcher] Scan Complete. Scanned: ${effectiveManagers}, Failed: ${failedCount}`);
     
     // 4. Calculate final percentages and construct output JSON
     const finalPlayers: Record<number, { name: string; ownership: number; started: number; eo: number; captain: number; tripleCaptain: number }> = {};
@@ -150,7 +150,7 @@ async function run() {
       nameMap[el.id] = el.web_name;
     });
     
-    const sampleSize = scannedCount || 1; // Prevent division by zero
+    const sampleSize = effectiveManagers || 1; // Prevent division by zero
     
     Object.keys(playerTallies).forEach((pIdStr) => {
       const pId = parseInt(pIdStr);
@@ -177,7 +177,7 @@ async function run() {
     const outputData = {
       gameweek: currentGW,
       lastUpdated: Date.now(),
-      sampleSize: scannedCount,
+      sampleSize: effectiveManagers,
       players: finalPlayers
     };
     
