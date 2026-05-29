@@ -9,6 +9,7 @@ import {
 } from './types.js';
 import { CSVOracle } from './ingestion.js';
 import { Simulator } from './simulator.js';
+import { solveOptimalSquad } from './lp-solver.js';
 
 const FPL_BASE_URL = "https://fantasy.premierleague.com/api";
 
@@ -134,32 +135,17 @@ export class FPLService {
   static async getRecommendations(riskMode: string): Promise<RecommendationResponse> {
     const { players, teams, fixtures, nextEventId } = await this.getBaseData();
 
+    const oracle = new CSVOracle('data/fplform_scraped.csv', players, riskMode, fixtures, teams, nextEventId);
+
     const available = players.filter(p => p.status === 'a' || p.chance_of_playing_next_round === 100);
-    const scored = available.map(p => this.mapToScoredPlayer(p, teams, fixtures, nextEventId, riskMode));
-
-
-
-    const model: LPSolverModel = {
-      optimize: "score",
-      opType: "max",
-      constraints: { cost: { max: 1000 }, total: { equal: 15 }, gkp: { equal: 2 }, def: { equal: 5 }, mid: { equal: 5 }, fwd: { equal: 3 } },
-      variables: {},
-      ints: {}
-    };
-
-    teams.forEach(t => { model.constraints[`team_${t.id}`] = { max: 3 }; });
-    scored.forEach(p => {
-      const v = `p_${p.id}`;
-      model.variables[v] = { score: p.score, cost: p.now_cost, total: 1, [p.position.toLowerCase()]: 1, [`team_${p.team}`]: 1, [v]: 1 };
-      model.constraints[v] = { max: 1 };
-      model.ints[v] = 1;
+    const scored = available.map(p => {
+      const mapped = this.mapToScoredPlayer(p, teams, fixtures, nextEventId, riskMode);
+      mapped.score = oracle.getXP(p.id, nextEventId);
+      return mapped;
     });
 
-    const solution = solver.Solve(model);
-    const squad = scored.filter(p => {
-      const val = solution[`p_${p.id}`];
-      return val === true || val === 1 || (typeof val === 'number' && val > 0.5);
-    });
+    const optimalIds = solveOptimalSquad(oracle, nextEventId, 1000);
+    const squad = scored.filter(p => optimalIds.includes(p.id));
     
     const sortByScore = (a: ScoredPlayer, b: ScoredPlayer) => (b.score || 0) - (a.score || 0);
     const gkps = squad.filter(p => p.position === "GKP").sort(sortByScore);
