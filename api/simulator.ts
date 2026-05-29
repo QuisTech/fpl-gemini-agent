@@ -104,11 +104,29 @@ export class Simulator {
     
     // 3. Generate valid single transfers (1-for-1 swaps)
     const squadSet = new Set(state.squad);
-    const candidateIds = oracle.getAllPlayerIds();
+    const horizon = this.maxDepth;
+    const candidateIds = this.getFilteredCandidates(oracle, gw, horizon);
     const potentialSwaps: { outId: number; inId: number; diff: number }[] = [];
 
-    // Calculate planning lookahead horizon for candidate evaluation (true 8-week optimization)
-    const horizon = this.maxDepth;
+    // Precompute candidate scores over the horizon to avoid redundant calculations inside the nested loop
+    const candidateXPs: Record<number, number> = {};
+    candidateIds.forEach(inId => {
+      let inXP = 0;
+      for (let i = 0; i < horizon; i++) {
+        inXP += oracle.getXP(inId, gw + i);
+      }
+      if (riskMode !== 'value') {
+        const inCost = oracle.getCost(inId);
+        const costInMillions = inCost / 10;
+        if (costInMillions >= 10.0) inXP *= 1.15;
+        else if (costInMillions >= 8.0) inXP *= 1.08;
+
+        const eo = oracle.getTop1kEO?.(inId) ?? 0;
+        if (riskMode === 'safe') inXP *= (1 + 0.15 * (eo / 100));
+        else if (riskMode === 'aggressive') inXP *= (1 + 0.25 * (1 - eo / 100));
+      }
+      candidateXPs[inId] = inXP;
+    });
 
     state.squad.forEach(outId => {
       const outPos = oracle.getPosition(outId);
@@ -136,20 +154,7 @@ export class Simulator {
         const inCost = oracle.getCost(inId);
         if (inCost > outCost + state.bank) return;
 
-        // Sum expected points over the lookahead horizon
-        let inXP = 0;
-        for (let i = 0; i < horizon; i++) {
-          inXP += oracle.getXP(inId, gw + i);
-        }
-        if (riskMode !== 'value') {
-          const costInMillions = inCost / 10;
-          if (costInMillions >= 10.0) inXP *= 1.15;
-          else if (costInMillions >= 8.0) inXP *= 1.08;
-
-          const eo = oracle.getTop1kEO?.(inId) ?? 0;
-          if (riskMode === 'safe') inXP *= (1 + 0.15 * (eo / 100));
-          else if (riskMode === 'aggressive') inXP *= (1 + 0.25 * (1 - eo / 100));
-        }
+        const inXP = candidateXPs[inId];
         
         // Normalize difference to a per-gameweek average
         const totalDiff = inXP - outXP;
@@ -317,5 +322,23 @@ export class Simulator {
     }
 
     return currentBeam;
+  }
+
+  private getFilteredCandidates(oracle: XPOracle, gw: number, horizon: number): number[] {
+    const allIds = oracle.getAllPlayerIds();
+    const scoredCandidates = allIds.map(id => {
+      let totalXP = 0;
+      for (let i = 0; i < horizon; i++) {
+        totalXP += oracle.getXP(id, gw + i);
+      }
+      return { id, xp: totalXP, pos: oracle.getPosition(id) };
+    });
+
+    const gkps = scoredCandidates.filter(p => p.pos === 'GKP').sort((a, b) => b.xp - a.xp).slice(0, 10).map(p => p.id);
+    const defs = scoredCandidates.filter(p => p.pos === 'DEF').sort((a, b) => b.xp - a.xp).slice(0, 20).map(p => p.id);
+    const mids = scoredCandidates.filter(p => p.pos === 'MID').sort((a, b) => b.xp - a.xp).slice(0, 25).map(p => p.id);
+    const fwds = scoredCandidates.filter(p => p.pos === 'FWD').sort((a, b) => b.xp - a.xp).slice(0, 15).map(p => p.id);
+
+    return [...gkps, ...defs, ...mids, ...fwds];
   }
 }

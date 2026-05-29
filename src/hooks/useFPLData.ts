@@ -21,12 +21,13 @@ export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value') => {
 
   useEffect(() => {
     fetchRecommendations();
-  }, [riskMode]);
+  }, [riskMode, syncedData?.totalCost, syncedData?.bank]);
 
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/recommendations?riskMode=${riskMode}`);
+      const budgetQuery = syncedData ? `&budget=${(syncedData.totalCost || 0) + (syncedData.bank || 0)}` : '';
+      const res = await axios.get(`/api/recommendations?riskMode=${riskMode}${budgetQuery}`);
       if (res.data) {
         setData(res.data);
       }

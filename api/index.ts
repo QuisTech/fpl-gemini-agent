@@ -133,7 +133,7 @@ export class FPLService {
     };
   }
 
-  static async getRecommendations(riskMode: string): Promise<RecommendationResponse> {
+  static async getRecommendations(riskMode: string, budget: number = 1000): Promise<RecommendationResponse> {
     const { players, teams, fixtures, nextEventId } = await this.getBaseData();
 
     const oracle = new CSVOracle('data/fplform_scraped.csv', players, riskMode, fixtures, teams, nextEventId);
@@ -145,7 +145,7 @@ export class FPLService {
       return mapped;
     });
 
-    const optimalIds = solveOptimalSquad(oracle, nextEventId, 1000, 8, riskMode);
+    const optimalIds = solveOptimalSquad(oracle, nextEventId, budget, 8, riskMode);
     const squad = scored.filter(p => optimalIds.includes(p.id));
     
     const sortByScore = (a: ScoredPlayer, b: ScoredPlayer) => (b.score || 0) - (a.score || 0);
@@ -380,7 +380,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const riskMode = (query.riskMode as string) || 'safe';
 
     if (url.includes('/api/recommendations')) {
-      const result = await FPLService.getRecommendations(riskMode);
+      const budget = query.budget ? parseInt(query.budget as string) : 1000;
+      const result = await FPLService.getRecommendations(riskMode, budget);
       return res.status(200).json(result);
     } 
     
