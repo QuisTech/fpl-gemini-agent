@@ -273,9 +273,11 @@ export class FPLService {
 
     const simulator = new Simulator(true); // Vercel mode = true
     
+    const bank = teamRes.data.entry_history?.bank || 0;
+
     const initialState = {
       squad: myPicks.map(p => p.id),
-      bank: teamRes.data.entry_history?.bank || 0, // Live bank value
+      bank, // Live bank value
       freeTransfers: 1, // Defaulting to 1 for live pull
       chipState: { 'WC': 1, 'BB': 1, 'TC': 1, 'FH': 1 }, // Assuming chips are available for testing
       gameweek: baseData.nextEventId,
@@ -355,10 +357,14 @@ export class FPLService {
       }
     ];
 
+    const totalCost = myPicks.reduce((sum, p) => sum + (p.now_cost || 0), 0);
+
     return {
       squad: myPicks,
       transfers,
-      chips
+      chips,
+      bank,
+      totalCost
     };
   }
 }

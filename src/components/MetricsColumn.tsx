@@ -1,28 +1,34 @@
 import { Star } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { RecommendationResponse } from '../types';
+import { RecommendationResponse, TeamSyncResponse } from '../types';
 
 interface MetricsColumnProps {
   data: RecommendationResponse | null;
+  syncedData?: TeamSyncResponse | null;
   riskMode: 'safe' | 'aggressive' | 'value';
 }
 
-export const MetricsColumn = ({ data, riskMode }: MetricsColumnProps) => {
+export const MetricsColumn = ({ data, syncedData, riskMode }: MetricsColumnProps) => {
+  const isSynced = !!syncedData;
+  const squadValue = isSynced ? (syncedData.totalCost || 0) : (data?.totalCost || 0);
+  const itb = isSynced ? (syncedData.bank || 0) : (1000 - (data?.totalCost || 0));
+  const badgeText = isSynced ? "MY SQUAD" : "OPTIMAL";
+
   return (
     <div className="col-span-12 lg:col-span-3 grid grid-cols-1 gap-4">
       {/* Squad Metrics Card */}
       <div className="bg-card-bg border border-fpl-border rounded-3xl p-5 flex flex-col justify-between shadow-sm">
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Squad Value</h2>
-          <span className="text-fpl-green text-[10px] font-bold">OPTIMAL</span>
+          <span className="text-fpl-green text-[10px] font-bold">{badgeText}</span>
         </div>
         <div>
           <div className="text-4xl font-bold font-mono tracking-tighter text-white">
-            £{((data?.totalCost || 0) / 10).toFixed(1)}M
+            £{(squadValue / 10).toFixed(1)}M
           </div>
           <div className="flex justify-between mt-3 pt-3 border-t border-fpl-border">
             <span className="text-slate-400 text-xs font-medium">ITB Remaining</span>
-            <span className="font-mono font-black text-sm text-fpl-green">£{(100 - ((data?.totalCost || 0) / 10)).toFixed(1)}M</span>
+            <span className="font-mono font-black text-sm text-fpl-green">£{(itb / 10).toFixed(1)}M</span>
           </div>
         </div>
         <div className="mt-6 space-y-3">

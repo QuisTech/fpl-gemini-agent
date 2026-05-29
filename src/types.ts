@@ -104,4 +104,6 @@ export interface TeamSyncResponse {
   squad: ScoredPlayer[];
   transfers: TransferRecommendation[];
   chips: ChipAdvice[];
+  bank?: number;
+  totalCost?: number;
 }

@@ -42,6 +42,11 @@ export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: nu
       score += oracle.getXP(id, gameweek + i);
     }
     
+    // Add deterministic tie-breaker to prevent search explosion in branch-and-bound LP solver
+    if (score > 0 && riskMode === 'value') {
+      score += (id % 10000) * 1e-4;
+    }
+    
     const cost = oracle.getCost(id);
 
     // Apply EO/Risk utility adjustments to the LP objective score
@@ -140,6 +145,11 @@ export function solveOptimalTransfers(
     let score = 0;
     for (let i = 0; i < horizon; i++) {
       score += oracle.getXP(id, gameweek + i);
+    }
+    
+    // Add deterministic tie-breaker to prevent search explosion in branch-and-bound LP solver
+    if (score > 0 && riskMode === 'value') {
+      score += (id % 10000) * 1e-4;
     }
     
     const cost = oracle.getCost(id);

@@ -68,7 +68,7 @@ export default function App() {
         
         <Header data={data} riskMode={riskMode} setRiskMode={setRiskMode} />
 
-        <MetricsColumn data={data} riskMode={riskMode} />
+        <MetricsColumn data={data} syncedData={syncedData} riskMode={riskMode} />
 
         {/* Primary Content Area */}
         <div className="col-span-12 lg:col-span-6 bg-card-bg border border-fpl-border rounded-3xl overflow-hidden relative shadow-xl min-h-[600px]">
