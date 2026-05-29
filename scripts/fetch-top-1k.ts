@@ -4,6 +4,7 @@ import path from 'path';
 
 const FPL_BASE_URL = 'https://fantasy.premierleague.com/api';
 const LEAGUE_ID = process.env.FPL_LEAGUE_ID || '314'; // Default to Overall League
+const PAGES_TO_SCAN = parseInt(process.env.FPL_PAGES_TO_SCAN || '10'); // Default to 10 pages (500 managers)
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 1000;
 
@@ -53,10 +54,11 @@ async function run() {
     
     console.log(`[Top 1K Fetcher] Current Completed Gameweek: GW${currentGW} (next is GW${nextEventId})`);
     
-    // 2. Fetch Top 1,000 manager IDs from Standings pages 1 to 20
+    // 2. Fetch manager IDs from Standings pages
     const managerIds: number[] = [];
-    console.log(`[Top 1K Fetcher] Retrieving Top 1,000 manager IDs from League ${LEAGUE_ID}...`);
-    for (let page = 1; page <= 20; page++) {
+    const targetCount = PAGES_TO_SCAN * 50;
+    console.log(`[Top 1K Fetcher] Retrieving Top ${targetCount} manager IDs from League ${LEAGUE_ID} (pages 1 to ${PAGES_TO_SCAN})...`);
+    for (let page = 1; page <= PAGES_TO_SCAN; page++) {
       const standingsUrl = `${FPL_BASE_URL}/leagues-classic/${LEAGUE_ID}/standings/?page_standings=${page}`;
       const standingsData = await fetchWithRetry(standingsUrl);
       if (standingsData && standingsData.standings && standingsData.standings.results) {
@@ -77,7 +79,7 @@ async function run() {
       process.exit(1);
     }
     
-    // 3. Scan picks for all 1,000 managers in batches
+    // 3. Scan picks for all managers in batches
     const playerTallies: Record<number, { ownership: number; started: number; captain: number; tripleCaptain: number }> = {};
     let scannedCount = 0;
     let failedCount = 0;
