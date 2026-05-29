@@ -4,7 +4,8 @@ import path from 'path';
 
 const FPL_BASE_URL = 'https://fantasy.premierleague.com/api';
 const LEAGUE_ID = process.env.FPL_LEAGUE_ID || '314'; // Default to Overall League
-const PAGES_TO_SCAN = parseInt(process.env.FPL_PAGES_TO_SCAN || '10'); // Default to 10 pages (500 managers)
+const MANAGERS_TO_SCAN = parseInt(process.env.FPL_TOP_N_MANAGERS || '1000'); // Default to 1000 managers
+const PAGES_TO_SCAN = Math.ceil(MANAGERS_TO_SCAN / 50);
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 1000;
 
@@ -72,22 +73,23 @@ async function run() {
       await sleep(200);
     }
     
-    console.log(`[Top 1K Fetcher] ✅ Successfully gathered ${managerIds.length} manager IDs.`);
+    const finalManagerIds = managerIds.slice(0, MANAGERS_TO_SCAN);
+    console.log(`[Top 1K Fetcher] ✅ Successfully gathered ${finalManagerIds.length} manager IDs.`);
     
-    if (managerIds.length === 0) {
+    if (finalManagerIds.length === 0) {
       console.error('[Top 1K Fetcher] ❌ No manager IDs found. Exiting.');
       process.exit(1);
     }
     
     // 3. Scan picks for all managers in batches
-    const playerTallies: Record<number, { ownership: number; started: number; captain: number; tripleCaptain: number }> = {};
+    const playerTallies: Record<number, { ownership: number; started: number; captain: number; tripleCaptain: number; totalMultiplier: number }> = {};
     let scannedCount = 0;
     let failedCount = 0;
     
     console.log(`[Top 1K Fetcher] Fetching picks for GW${currentGW} in batches of ${BATCH_SIZE}...`);
     
-    for (let i = 0; i < managerIds.length; i += BATCH_SIZE) {
-      const batch = managerIds.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < finalManagerIds.length; i += BATCH_SIZE) {
+      const batch = finalManagerIds.slice(i, i + BATCH_SIZE);
       const promises = batch.map(async (id) => {
         const url = `${FPL_BASE_URL}/entry/${id}/event/${currentGW}/picks/`;
         try {
@@ -103,7 +105,7 @@ async function run() {
               const multiplier = p.multiplier;
               
               if (!playerTallies[pId]) {
-                playerTallies[pId] = { ownership: 0, started: 0, captain: 0, tripleCaptain: 0 };
+                playerTallies[pId] = { ownership: 0, started: 0, captain: 0, tripleCaptain: 0, totalMultiplier: 0 };
               }
               
               playerTallies[pId].ownership += 1;
@@ -115,6 +117,7 @@ async function run() {
               } else if (multiplier === 3) {
                 playerTallies[pId].tripleCaptain += 1;
               }
+              playerTallies[pId].totalMultiplier += multiplier;
             });
             scannedCount++;
           } else {
@@ -129,8 +132,8 @@ async function run() {
       await Promise.all(promises);
       
       // Update progress
-      if ((i + BATCH_SIZE) % 100 === 0 || i + BATCH_SIZE >= managerIds.length) {
-        console.log(`[Progress] Scanned ${Math.min(i + BATCH_SIZE, managerIds.length)}/${managerIds.length} manager picks...`);
+      if ((i + BATCH_SIZE) % 100 === 0 || i + BATCH_SIZE >= finalManagerIds.length) {
+        console.log(`[Progress] Scanned ${Math.min(i + BATCH_SIZE, finalManagerIds.length)}/${finalManagerIds.length} manager picks...`);
       }
       
       await sleep(BATCH_DELAY_MS);
@@ -158,9 +161,8 @@ async function run() {
       const captainPercent = parseFloat(((tally.captain / sampleSize) * 100).toFixed(1));
       const tripleCaptainPercent = parseFloat(((tally.tripleCaptain / sampleSize) * 100).toFixed(1));
       
-      // EO calculation: multiplier sum divided by sample size * 100
-      const totalMultipliers = tally.started + tally.captain + (tally.tripleCaptain * 2);
-      const eoPercent = parseFloat(((totalMultipliers / sampleSize) * 100).toFixed(1));
+      // EO calculation: totalMultiplier sum divided by sample size * 100
+      const eoPercent = parseFloat(((tally.totalMultiplier / sampleSize) * 100).toFixed(1));
       
       finalPlayers[pId] = {
         name: nameMap[pId] || 'Unknown',
