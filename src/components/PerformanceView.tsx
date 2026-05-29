@@ -95,7 +95,8 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
                 const data = modes[mode];
                 if (!data) return null;
                 
-                const normalizedXP = (data.xP || 0) / 15;
+                const rawXP = data.xP || 0;
+                const normalizedXP = rawXP > 200 ? rawXP / 15 : rawXP;
                 const actual = calculateActual(gwId, data);
                 const diff = actual - normalizedXP;
                 const hasStarted = actual > 0;
