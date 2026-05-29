@@ -80,7 +80,8 @@ export class Simulator {
     oracle: XPOracle, 
     gw: number, 
     allowLpTransfers: boolean = true,
-    step: number = 0
+    step: number = 0,
+    riskMode: string = 'safe'
   ): Action[] {
     const actions: Action[] = [];
     
@@ -118,6 +119,15 @@ export class Simulator {
       for (let i = 0; i < horizon; i++) {
         outXP += oracle.getXP(outId, gw + i);
       }
+      if (riskMode !== 'value') {
+        const costInMillions = outCost / 10;
+        if (costInMillions >= 10.0) outXP *= 1.15;
+        else if (costInMillions >= 8.0) outXP *= 1.08;
+
+        const eo = oracle.getTop1kEO?.(outId) ?? 0;
+        if (riskMode === 'safe') outXP *= (1 + 0.15 * (eo / 100));
+        else if (riskMode === 'aggressive') outXP *= (1 + 0.25 * (1 - eo / 100));
+      }
 
       candidateIds.forEach(inId => {
         if (squadSet.has(inId)) return;
@@ -130,6 +140,15 @@ export class Simulator {
         let inXP = 0;
         for (let i = 0; i < horizon; i++) {
           inXP += oracle.getXP(inId, gw + i);
+        }
+        if (riskMode !== 'value') {
+          const costInMillions = inCost / 10;
+          if (costInMillions >= 10.0) inXP *= 1.15;
+          else if (costInMillions >= 8.0) inXP *= 1.08;
+
+          const eo = oracle.getTop1kEO?.(inId) ?? 0;
+          if (riskMode === 'safe') inXP *= (1 + 0.15 * (eo / 100));
+          else if (riskMode === 'aggressive') inXP *= (1 + 0.25 * (1 - eo / 100));
         }
         
         // Normalize difference to a per-gameweek average
@@ -158,7 +177,7 @@ export class Simulator {
     // 4. Generate LP-optimized multi-transfer packages (K = 1, 2, 3 transfers)
     if (allowLpTransfers) {
       for (let k = 1; k <= 3; k++) {
-        const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k, horizon);
+        const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k, horizon, riskMode);
         if (lpResult && lpResult.transfersIn.length > 0) {
           const transfersCount = lpResult.transfersIn.length;
           const hitCost = Math.max(0, transfersCount - state.freeTransfers) * 4;
@@ -216,7 +235,7 @@ export class Simulator {
           currentState.freeTransfers = 1;
         }
 
-        const actions = this.generateValidActions(currentState, oracle, gw, step === 0, step);
+        const actions = this.generateValidActions(currentState, oracle, gw, step === 0, step, riskMode);
         
         for (const action of actions) {
           const nextState: SquadState = {
@@ -249,7 +268,7 @@ export class Simulator {
               const availableBudget = squadValue + nextState.bank;
               
               // Wildcard squad should optimize over the full lookahead depth
-              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, this.maxDepth);
+              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, this.maxDepth, riskMode);
               nextState.freeTransfers = 1; // Wildcard resets FTs
             } else if (action.chipName === 'FH') {
               // Save the pre-Free Hit squad and bank value
@@ -261,7 +280,7 @@ export class Simulator {
               nextState.squad.forEach(id => squadValue += oracle.getCost(id));
               const availableBudget = squadValue + nextState.bank;
               
-              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, 1);
+              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, 1, riskMode);
             }
           }
 

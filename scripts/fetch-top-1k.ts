@@ -91,6 +91,10 @@ async function run() {
         try {
           const pickData = await fetchWithRetry(url, 3, 1000);
           if (pickData && pickData.picks) {
+            if (pickData.active_chip === 'freehit') {
+              console.log(`[Top 1K Fetcher] Entry ${id} used Free Hit in GW${currentGW}. Skipping to avoid reversion noise.`);
+              return;
+            }
             pickData.picks.forEach((p: any) => {
               const pId = p.element;
               const isStarter = p.position <= 11;

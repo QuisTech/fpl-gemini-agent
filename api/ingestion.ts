@@ -130,32 +130,7 @@ export class CSVOracle implements XPOracle {
         
         const teamId = teamMap[team.toLowerCase()] || realTeamId || 0;
 
-        let adjustedMerit = meritScore;
-
-        const top1kEO = this.top1kData[fplId]?.eo ?? rawOwnership;
-
-        // Apply Strategy Mode Logic using Elite Sentiment (EO Shielding & differential hunting)
-        if (riskMode !== 'value') {
-          if (riskMode === 'aggressive') {
-            // Aggressive Mode: Boost high-upside differentials (low Top 1k EO)
-            if (top1kEO < 10.0) {
-              adjustedMerit *= 1.25; 
-            }
-          } else if (riskMode === 'safe') {
-            // Safe Mode: Boost high-EO players (shields) to protect against punishment risk
-            if (top1kEO > 50.0) {
-              adjustedMerit *= 1.10; 
-            }
-          }
-          
-          // Premium Captaincy Protection (still applies as base utility safeguard)
-          const costInMillions = cost / 10;
-          if (costInMillions >= 10.0) {
-            adjustedMerit *= 1.15;
-          } else if (costInMillions >= 8.0) {
-            adjustedMerit *= 1.08;
-          }
-        }
+        const adjustedMerit = meritScore;
 
         this.playerNames[fplId] = playerName;
         this.playerPositions[fplId] = pos;

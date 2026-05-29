@@ -141,14 +141,14 @@ describe('CSVOracle Ingestion & Strategy Multipliers', () => {
     expect(oracleSafe.getPosition(300)).toBe('MID');
     expect(oracleSafe.getCost(300)).toBe(125); // 12.5 * 10
 
-    // Mbeumo is a differential (4.2% ownership)
-    // Safe mode: no differential boost. Premium boost applies to Salah (£12.5m >= 10.0m: 1.15x) and Isak (£8.5m >= 8.0m: 1.08x)
-    // Mbeumo: £7.0m -> no premium boost, no differential boost. Score = 5.5
+    // All strategic multipliers have been moved to the LP Solver / utility layer.
+    // In CSVOracle, Salah and Mbeumo expected points must remain completely pure and unmutated.
     expect(oracleSafe.getXP(600, 1)).toBeCloseTo(5.5, 1);
+    expect(oracleSafe.getXP(300, 1)).toBeCloseTo(8.0, 1);
 
-    // Aggressive Mode: Mbeumo should receive 1.25x differential boost
+    // Aggressive Mode: expected points also remain pure.
     const oracleAggressive = new CSVOracle(tempCsvPath, realPlayersMetadata, 'aggressive');
-    expect(oracleAggressive.getXP(600, 1)).toBeCloseTo(5.5 * 1.25, 1);
+    expect(oracleAggressive.getXP(600, 1)).toBeCloseTo(5.5, 1);
 
     // Clean up
     if (fs.existsSync(tempCsvPath)) {
@@ -465,8 +465,8 @@ describe('CSVOracle Dynamic xP & Fixture logic', () => {
 
     // 1. Check absolute gameweek alignment
     // Since nextEventId is 30, gw 30 is step 0 (decay = 1.0)
-    // Salah: base merit = 10.0 * 1.15 = 11.5. FDR = 2 -> Multiplier = 1.1. Expected = 11.5 * 1.1 * 1.0 = 12.65
-    expect(oracle.getXP(300, 30)).toBeCloseTo(12.65, 1);
+    // Salah: base merit = 10.0. FDR = 2 -> Multiplier = 1.1. Expected = 10.0 * 1.1 * 1.0 = 11.0
+    expect(oracle.getXP(300, 30)).toBeCloseTo(11.0, 1);
 
     // Week 29 should return 0 (outside horizon)
     expect(oracle.getXP(300, 29)).toBe(0);
@@ -474,12 +474,12 @@ describe('CSVOracle Dynamic xP & Fixture logic', () => {
     expect(oracle.getXP(300, 38)).toBe(0);
 
     // 2. Check FDR Adjustment (gw 31 is step 1, decay = 0.9^1 = 0.9)
-    // Salah: base merit = 11.5. FDR = 4 -> Multiplier = 0.9. Expected = 11.5 * 0.9 * 0.9 = 9.315
-    expect(oracle.getXP(300, 31)).toBeCloseTo(9.3, 1);
+    // Salah: base merit = 10.0. FDR = 4 -> Multiplier = 0.9. Expected = 10.0 * 0.9 * 0.9 = 8.1
+    expect(oracle.getXP(300, 31)).toBeCloseTo(8.1, 1);
 
     // 3. Check Double Gameweek (NEW in week 32, step 2, decay = 0.9^2 = 0.81)
-    // Isak: base merit = 6.0 * 1.08 = 6.48. Multiplier = 1.0. Expected = (6.48 * 0.81) * 2 = 10.4976
-    expect(oracle.getXP(450, 32)).toBeCloseTo(10.5, 1);
+    // Isak: base merit = 6.0. Multiplier = 1.0. Expected = (6.0 * 0.81) * 2 = 9.72
+    expect(oracle.getXP(450, 32)).toBeCloseTo(9.7, 1);
 
     // 4. Check Blank Gameweek (LIV has no fixtures in week 33)
     expect(oracle.getXP(300, 33)).toBe(0);
@@ -625,12 +625,12 @@ describe('Simulator - Probabilistic Player Model & Expected Utility', () => {
     // eApp = 0.1425 + 2 * 0.8075 = 1.7575
     // eApp2 = 0.1425 + 4 * 0.8075 = 3.3725
     // varApp = 3.3725 - (1.7575)^2 = 3.3725 - 3.0888 = 0.2837
-    // Salah premium merit = 10.0 * 1.15 = 11.5
-    // expectedReturns = 11.5 - 1.7575 = 9.7425
-    // varReturns = 1.5 * 9.7425 = 14.61375
-    // totalVariance = varApp + varReturns = 0.2837 + 14.61375 = 14.897
-    expect(oracle.getXP(300, 30)).toBeCloseTo(11.5, 1);
-    expect(oracle.getVariance(300, 30)).toBeCloseTo(14.9, 1);
+    // Salah merit = 10.0 (unmutated pure xP)
+    // expectedReturns = 10.0 - 1.7575 = 8.2425
+    // varReturns = 1.5 * 8.2425 = 12.36375
+    // totalVariance = varApp + varReturns = 0.2837 + 12.36375 = 12.647
+    expect(oracle.getXP(300, 30)).toBeCloseTo(10.0, 1);
+    expect(oracle.getVariance(300, 30)).toBeCloseTo(12.6, 1);
 
     // 2. Isak (Highly Rotated): P(play) = 0.40 < 0.8
     // p90 = 0.40 * 0.5 = 0.20
@@ -638,12 +638,12 @@ describe('Simulator - Probabilistic Player Model & Expected Utility', () => {
     // eApp = 0.20 + 2 * 0.20 = 0.60
     // eApp2 = 0.20 + 4 * 0.20 = 1.00
     // varApp = 1.00 - (0.60)^2 = 1.00 - 0.36 = 0.64
-    // Isak premium merit = 6.0 * 1.08 = 6.48
-    // expectedReturns = 6.48 - 0.60 = 5.88
-    // varReturns = 1.5 * 5.88 = 8.82
-    // totalVariance = varApp + varReturns = 0.64 + 8.82 = 9.46
-    expect(oracle.getXP(450, 30)).toBeCloseTo(6.48, 1);
-    expect(oracle.getVariance(450, 30)).toBeCloseTo(9.46, 1);
+    // Isak merit = 6.0 (unmutated pure xP)
+    // expectedReturns = 6.0 - 0.60 = 5.40
+    // varReturns = 1.5 * 5.40 = 8.10
+    // totalVariance = varApp + varReturns = 0.64 + 8.10 = 8.74
+    expect(oracle.getXP(450, 30)).toBeCloseTo(6.0, 1);
+    expect(oracle.getVariance(450, 30)).toBeCloseTo(8.7, 1);
 
     // Clean up
     if (fs.existsSync(tempCsvPath)) {

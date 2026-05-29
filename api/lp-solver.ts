@@ -9,7 +9,7 @@ interface LPSolverModel {
   ints: Record<string, 1>;
 }
 
-export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: number, horizon: number = 8): number[] {
+export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: number, horizon: number = 8, riskMode: string = 'safe'): number[] {
   const allIds = oracle.getAllPlayerIds();
   
   const model: LPSolverModel = {
@@ -43,6 +43,26 @@ export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: nu
     }
     
     const cost = oracle.getCost(id);
+
+    // Apply EO/Risk utility adjustments to the LP objective score
+    if (score > 0 && riskMode !== 'value') {
+      // 1. Premium Captaincy Protection
+      const costInMillions = cost / 10;
+      if (costInMillions >= 10.0) {
+        score *= 1.15;
+      } else if (costInMillions >= 8.0) {
+        score *= 1.08;
+      }
+
+      // 2. Smooth EO Sentiment scaling
+      if (riskMode === 'safe') {
+        const eo = oracle.getTop1kEO?.(id) ?? 0;
+        score *= (1 + 0.15 * (eo / 100));
+      } else if (riskMode === 'aggressive') {
+        const eo = oracle.getTop1kEO?.(id) ?? 0;
+        score *= (1 + 0.25 * (1 - eo / 100));
+      }
+    }
 
     // Only consider players who have a score > 0 to keep the model small
     if (score > 0) {
@@ -80,7 +100,8 @@ export function solveOptimalTransfers(
   currentSquad: number[], 
   bank: number, 
   maxTransfers: number,
-  horizon: number = 8
+  horizon: number = 8,
+  riskMode: string = 'safe'
 ): { squad: number[]; transfersIn: number[]; transfersOut: number[] } | null {
   const allIds = oracle.getAllPlayerIds();
   const currentSet = new Set(currentSquad);
@@ -122,6 +143,27 @@ export function solveOptimalTransfers(
     }
     
     const cost = oracle.getCost(id);
+
+    // Apply EO/Risk utility adjustments to the LP objective score
+    if (score > 0 && riskMode !== 'value') {
+      // 1. Premium Captaincy Protection
+      const costInMillions = cost / 10;
+      if (costInMillions >= 10.0) {
+        score *= 1.15;
+      } else if (costInMillions >= 8.0) {
+        score *= 1.08;
+      }
+
+      // 2. Smooth EO Sentiment scaling
+      if (riskMode === 'safe') {
+        const eo = oracle.getTop1kEO?.(id) ?? 0;
+        score *= (1 + 0.15 * (eo / 100));
+      } else if (riskMode === 'aggressive') {
+        const eo = oracle.getTop1kEO?.(id) ?? 0;
+        score *= (1 + 0.25 * (1 - eo / 100));
+      }
+    }
+
     const isCurrent = currentSet.has(id);
 
     // Consider current squad players OR players with score > 0
