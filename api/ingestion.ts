@@ -10,6 +10,8 @@ export interface XPOracle {
   getCost(playerId: number): number;
   getTeam(playerId: number): string;
   getAllPlayerIds(): number[];
+  getTop1kEO?(playerId: number): number;
+  getTop1kOwnership?(playerId: number): number;
 }
 
 /**
@@ -23,6 +25,7 @@ export class CSVOracle implements XPOracle {
   private playerCosts: Record<number, number> = {};
   private playerTeams: Record<number, string> = {};
   private allIds: number[] = [];
+  private top1kData: Record<number, { ownership: number; started: number; eo: number; captain: number; tripleCaptain: number }> = {};
 
   constructor(
     filePath: string, 
@@ -32,7 +35,36 @@ export class CSVOracle implements XPOracle {
     teams: any[] = [], 
     nextEventId: number = 1
   ) {
+    this.loadTop1kData();
     this.loadData(filePath, players, fixtures, teams, nextEventId, riskMode);
+  }
+
+  private loadTop1kData() {
+    const jsonPath = path.resolve(process.cwd(), 'data', 'top_1000_eo.json');
+    if (fs.existsSync(jsonPath)) {
+      try {
+        const raw = fs.readFileSync(jsonPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.players) {
+          Object.keys(parsed.players).forEach(pId => {
+            this.top1kData[parseInt(pId)] = parsed.players[pId];
+          });
+          console.log(`[CSVOracle] Loaded Top 1,000 sentiment data for ${Object.keys(this.top1kData).length} players.`);
+        }
+      } catch (err: any) {
+        console.warn(`[CSVOracle] Failed to parse Top 1,000 EO data: ${err.message}`);
+      }
+    } else {
+      console.log('[CSVOracle] No Top 1,000 EO data found. Defaulting to standard metadata.');
+    }
+  }
+
+  getTop1kEO(playerId: number): number {
+    return this.top1kData[playerId]?.eo ?? 0;
+  }
+
+  getTop1kOwnership(playerId: number): number {
+    return this.top1kData[playerId]?.ownership ?? 0;
   }
 
   private loadData(
@@ -100,14 +132,23 @@ export class CSVOracle implements XPOracle {
 
         let adjustedMerit = meritScore;
 
-        // Apply Strategy Mode Logic
+        const top1kEO = this.top1kData[fplId]?.eo ?? rawOwnership;
+
+        // Apply Strategy Mode Logic using Elite Sentiment (EO Shielding & differential hunting)
         if (riskMode !== 'value') {
-          // Risky Mode: Boost massive differentials (< 5% ownership)
-          if (riskMode === 'aggressive' && rawOwnership < 5.0) {
-            adjustedMerit *= 1.25; 
+          if (riskMode === 'aggressive') {
+            // Aggressive Mode: Boost high-upside differentials (low Top 1k EO)
+            if (top1kEO < 10.0) {
+              adjustedMerit *= 1.25; 
+            }
+          } else if (riskMode === 'safe') {
+            // Safe Mode: Boost high-EO players (shields) to protect against punishment risk
+            if (top1kEO > 50.0) {
+              adjustedMerit *= 1.10; 
+            }
           }
           
-          // Premium Captaincy Protection: Expensive players are captained often
+          // Premium Captaincy Protection (still applies as base utility safeguard)
           const costInMillions = cost / 10;
           if (costInMillions >= 10.0) {
             adjustedMerit *= 1.15;
