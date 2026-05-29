@@ -160,14 +160,14 @@ export class CSVOracle implements XPOracle {
 
         this.xpMatrix[fplId] = {};
         this.varianceMatrix[fplId] = {};
-        for (let step = 0; step < 8; step++) {
+        for (let step = 0; step < 15; step++) {
           const gw = nextEventId + step;
           
           if (fixtures && fixtures.length > 0 && teamId > 0) {
             const teamFixtures = fixtures.filter(f => f.event === gw && (f.team_h === teamId || f.team_a === teamId));
             if (teamFixtures.length > 0) {
               let gwXP = 0;
-              const decayFactor = Math.max(0.5, 1 - step * 0.05);
+              const decayFactor = Math.pow(0.9, step);
               teamFixtures.forEach(f => {
                 const fdr = f.team_h === teamId ? f.team_h_difficulty : f.team_a_difficulty;
                 const diffMultiplier = 1 + (3 - fdr) * 0.1;
@@ -185,7 +185,7 @@ export class CSVOracle implements XPOracle {
             }
           } else {
             // Fallback for tests/isolated execution
-            const gwXP = adjustedMerit - (step * 0.05);
+            const gwXP = adjustedMerit * Math.pow(0.9, step);
             const expectedReturns = Math.max(0, gwXP - eApp);
             const varReturns = 1.5 * expectedReturns;
             this.xpMatrix[fplId][gw] = Math.max(0, eApp + expectedReturns);

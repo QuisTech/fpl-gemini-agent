@@ -473,13 +473,13 @@ describe('CSVOracle Dynamic xP & Fixture logic', () => {
     // Week 38 should return 0 (outside horizon)
     expect(oracle.getXP(300, 38)).toBe(0);
 
-    // 2. Check FDR Adjustment (gw 31 is step 1, decay = 0.95)
-    // Salah: base merit = 11.5. FDR = 4 -> Multiplier = 0.9. Expected = 11.5 * 0.9 * 0.95 = 9.83
-    expect(oracle.getXP(300, 31)).toBeCloseTo(9.83, 1);
+    // 2. Check FDR Adjustment (gw 31 is step 1, decay = 0.9^1 = 0.9)
+    // Salah: base merit = 11.5. FDR = 4 -> Multiplier = 0.9. Expected = 11.5 * 0.9 * 0.9 = 9.315
+    expect(oracle.getXP(300, 31)).toBeCloseTo(9.3, 1);
 
-    // 3. Check Double Gameweek (NEW in week 32, step 2, decay = 0.9)
-    // Isak: base merit = 6.0 * 1.08 = 6.48. Multiplier = 1.0. Expected = (6.48 * 0.9) * 2 = 11.66
-    expect(oracle.getXP(450, 32)).toBeCloseTo(11.66, 1);
+    // 3. Check Double Gameweek (NEW in week 32, step 2, decay = 0.9^2 = 0.81)
+    // Isak: base merit = 6.0 * 1.08 = 6.48. Multiplier = 1.0. Expected = (6.48 * 0.81) * 2 = 10.4976
+    expect(oracle.getXP(450, 32)).toBeCloseTo(10.5, 1);
 
     // 4. Check Blank Gameweek (LIV has no fixtures in week 33)
     expect(oracle.getXP(300, 33)).toBe(0);

@@ -9,7 +9,7 @@ interface LPSolverModel {
   ints: Record<string, 1>;
 }
 
-export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: number, horizon: number = 5): number[] {
+export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: number, horizon: number = 8): number[] {
   const allIds = oracle.getAllPlayerIds();
   
   const model: LPSolverModel = {
@@ -80,7 +80,7 @@ export function solveOptimalTransfers(
   currentSquad: number[], 
   bank: number, 
   maxTransfers: number,
-  horizon: number = 5
+  horizon: number = 8
 ): { squad: number[]; transfersIn: number[]; transfersOut: number[] } | null {
   const allIds = oracle.getAllPlayerIds();
   const currentSet = new Set(currentSquad);

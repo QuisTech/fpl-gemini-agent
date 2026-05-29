@@ -106,8 +106,8 @@ export class Simulator {
     const candidateIds = oracle.getAllPlayerIds();
     const potentialSwaps: { outId: number; inId: number; diff: number }[] = [];
 
-    // Calculate planning lookahead horizon for candidate evaluation
-    const horizon = Math.min(5, this.maxDepth - step);
+    // Calculate planning lookahead horizon for candidate evaluation (true 8-week optimization)
+    const horizon = this.maxDepth;
 
     state.squad.forEach(outId => {
       const outPos = oracle.getPosition(outId);
@@ -248,9 +248,8 @@ export class Simulator {
               nextState.squad.forEach(id => squadValue += oracle.getCost(id));
               const availableBudget = squadValue + nextState.bank;
               
-              // Wildcard squad should optimize over the remaining lookahead depth
-              const wildcardHorizon = Math.min(5, this.maxDepth - step);
-              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, wildcardHorizon);
+              // Wildcard squad should optimize over the full lookahead depth
+              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, this.maxDepth);
               nextState.freeTransfers = 1; // Wildcard resets FTs
             } else if (action.chipName === 'FH') {
               // Save the pre-Free Hit squad and bank value
