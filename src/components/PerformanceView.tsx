@@ -37,11 +37,11 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
     return total;
   };
 
-  const [expandedMode, setExpandedMode] = useState<string | null>(null);
+  const [expandedModes, setExpandedModes] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (gwId: number, mode: string) => {
     const key = `${gwId}-${mode}`;
-    setExpandedMode(expandedMode === key ? null : key);
+    setExpandedModes(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const refreshActuals = async (gwId: number) => {
@@ -99,7 +99,7 @@ export const PerformanceView = ({ history, fetchLivePoints }: PerformanceViewPro
                 const actual = calculateActual(gwId, data);
                 const diff = actual - normalizedXP;
                 const hasStarted = actual > 0;
-                const isExpanded = expandedMode === `${gwId}-${mode}`;
+                const isExpanded = !!expandedModes[`${gwId}-${mode}`];
                 
                 const activeCaptainId = data.captainId && actualScores[gwId]?.[data.captainId]?.minutes === 0 
                   ? data.viceCaptainId 
