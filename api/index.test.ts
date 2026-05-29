@@ -420,7 +420,7 @@ describe('Simulator - FH, BB, and TC Chip Logic', () => {
     expect(fhTrajectory!.chipState['FH']).toBe(0);
 
     // Verify that the gameweek advanced
-    expect(fhTrajectory!.gameweek).toBe(6); // maxDepth = 5, so 1 + 5 = 6
+    expect(fhTrajectory!.gameweek).toBe(9); // maxDepth = 8, so 1 + 8 = 9
   });
 });
 

@@ -30,8 +30,8 @@ export class Simulator {
 
   constructor(isVercel: boolean = false) {
     if (isVercel) {
-      this.beamWidth = 30;
-      this.maxDepth = 5;
+      this.beamWidth = 50;
+      this.maxDepth = 8;
     } else {
       this.beamWidth = 500;
       this.maxDepth = 8;
