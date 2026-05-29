@@ -22,7 +22,8 @@ async function startServer() {
   app.get("/api/recommendations", async (req, res) => {
     try {
       const riskMode = (req.query.riskMode as string) || 'safe';
-      const result = await FPLService.getRecommendations(riskMode);
+      const budget = req.query.budget ? parseInt(req.query.budget as string) : 1000;
+      const result = await FPLService.getRecommendations(riskMode, budget);
       res.json(result);
     } catch (error: any) {
       console.error("Local Dev Error:", error.message);

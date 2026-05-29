@@ -88,18 +88,20 @@ export class Simulator {
     // 1. Always consider rolling (doing nothing)
     actions.push({ type: 'ROLL', hitCost: 0 });
 
-    // 2. Consider Chips
-    if (state.chipState['WC'] > 0) {
-      actions.push({ type: 'CHIP', chipName: 'WC', hitCost: 0 });
-    }
-    if (state.chipState['FH'] > 0) {
-      actions.push({ type: 'CHIP', chipName: 'FH', hitCost: 0 });
-    }
-    if (state.chipState['BB'] > 0) {
-      actions.push({ type: 'CHIP', chipName: 'BB', hitCost: 0 });
-    }
-    if (state.chipState['TC'] > 0) {
-      actions.push({ type: 'CHIP', chipName: 'TC', hitCost: 0 });
+    // 2. Consider Chips (only at step 0 to prevent combinatoric explosion/LP solver timeouts)
+    if (step === 0) {
+      if (state.chipState['WC'] > 0) {
+        actions.push({ type: 'CHIP', chipName: 'WC', hitCost: 0 });
+      }
+      if (state.chipState['FH'] > 0) {
+        actions.push({ type: 'CHIP', chipName: 'FH', hitCost: 0 });
+      }
+      if (state.chipState['BB'] > 0) {
+        actions.push({ type: 'CHIP', chipName: 'BB', hitCost: 0 });
+      }
+      if (state.chipState['TC'] > 0) {
+        actions.push({ type: 'CHIP', chipName: 'TC', hitCost: 0 });
+      }
     }
     
     // 3. Generate valid single transfers (1-for-1 swaps)
