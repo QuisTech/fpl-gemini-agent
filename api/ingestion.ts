@@ -63,7 +63,13 @@ export class CSVOracle implements XPOracle {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      const cols = line.split(',').map(c => c.replace(/"/g, ''));
+      let cols: string[] = [];
+      try {
+        cols = line.split(',').map(c => (c || '').replace(/"/g, ''));
+      } catch (err: any) {
+        console.error(`[CSVOracle] Parsing failed at line ${i}: "${line}"`);
+        throw err;
+      }
       
       if (cols.length > 10 && cols[3] && cols[3].length === 3) {
         const playerName = cols[1];

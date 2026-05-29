@@ -2,9 +2,8 @@ import { FPLService } from './api/index.js';
 
 (async () => {
   try {
-    console.log('Testing V3 Endpoint Integration...');
-    // Replace 994112 with any real FPL team ID, using a dummy 1 for test
-    const response = await FPLService.syncTeam('1', 'safe');
+    console.log('Testing V3 Endpoint Integration with team ID 3018660...');
+    const response = await FPLService.syncTeam('3018660', 'safe');
     
     console.log('\n--- V3 Engine Output ---');
     console.log(`Transfers Suggested: ${response.transfers.length > 0 ? 'YES' : 'ROLL'}`);
@@ -16,6 +15,6 @@ import { FPLService } from './api/index.js';
     });
 
   } catch (err: any) {
-    console.error('Test Failed:', err.message);
+    console.error('Test Failed:', err);
   }
 })();
