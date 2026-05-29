@@ -75,7 +75,13 @@ export class Simulator {
     return state.accumulatedScore;
   }
 
-  public generateValidActions(state: SquadState, oracle: XPOracle, gw: number, allowLpTransfers: boolean = true): Action[] {
+  public generateValidActions(
+    state: SquadState, 
+    oracle: XPOracle, 
+    gw: number, 
+    allowLpTransfers: boolean = true,
+    step: number = 0
+  ): Action[] {
     const actions: Action[] = [];
     
     // 1. Always consider rolling (doing nothing)
@@ -100,10 +106,18 @@ export class Simulator {
     const candidateIds = oracle.getAllPlayerIds();
     const potentialSwaps: { outId: number; inId: number; diff: number }[] = [];
 
+    // Calculate planning lookahead horizon for candidate evaluation
+    const horizon = Math.min(5, this.maxDepth - step);
+
     state.squad.forEach(outId => {
       const outPos = oracle.getPosition(outId);
       const outCost = oracle.getCost(outId);
-      const outXP = oracle.getXP(outId, gw);
+      
+      // Sum expected points over the lookahead horizon
+      let outXP = 0;
+      for (let i = 0; i < horizon; i++) {
+        outXP += oracle.getXP(outId, gw + i);
+      }
 
       candidateIds.forEach(inId => {
         if (squadSet.has(inId)) return;
@@ -112,8 +126,15 @@ export class Simulator {
         const inCost = oracle.getCost(inId);
         if (inCost > outCost + state.bank) return;
 
-        const inXP = oracle.getXP(inId, gw);
-        const diff = inXP - outXP;
+        // Sum expected points over the lookahead horizon
+        let inXP = 0;
+        for (let i = 0; i < horizon; i++) {
+          inXP += oracle.getXP(inId, gw + i);
+        }
+        
+        // Normalize difference to a per-gameweek average
+        const totalDiff = inXP - outXP;
+        const diff = totalDiff / horizon;
         
         if (diff > 0.2) { // Only consider meaningful expected points improvements
           potentialSwaps.push({ outId, inId, diff });
@@ -137,7 +158,7 @@ export class Simulator {
     // 4. Generate LP-optimized multi-transfer packages (K = 1, 2, 3 transfers)
     if (allowLpTransfers) {
       for (let k = 1; k <= 3; k++) {
-        const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k);
+        const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k, horizon);
         if (lpResult && lpResult.transfersIn.length > 0) {
           const transfersCount = lpResult.transfersIn.length;
           const hitCost = Math.max(0, transfersCount - state.freeTransfers) * 4;
@@ -195,7 +216,7 @@ export class Simulator {
           currentState.freeTransfers = 1;
         }
 
-        const actions = this.generateValidActions(currentState, oracle, gw, step === 0);
+        const actions = this.generateValidActions(currentState, oracle, gw, step === 0, step);
         
         for (const action of actions) {
           const nextState: SquadState = {
@@ -227,19 +248,21 @@ export class Simulator {
               nextState.squad.forEach(id => squadValue += oracle.getCost(id));
               const availableBudget = squadValue + nextState.bank;
               
-              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget);
+              // Wildcard squad should optimize over the remaining lookahead depth
+              const wildcardHorizon = Math.min(5, this.maxDepth - step);
+              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, wildcardHorizon);
               nextState.freeTransfers = 1; // Wildcard resets FTs
             } else if (action.chipName === 'FH') {
               // Save the pre-Free Hit squad and bank value
               nextState.preFhSquad = currentState.squad;
               nextState.preFhBank = currentState.bank;
               
-              // Rebuild the temporary squad using LP solver
+              // Rebuild the temporary squad using LP solver (Free Hit is a single-GW chip: horizon = 1)
               let squadValue = 0;
               nextState.squad.forEach(id => squadValue += oracle.getCost(id));
               const availableBudget = squadValue + nextState.bank;
               
-              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget);
+              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget, 1);
             }
           }
 

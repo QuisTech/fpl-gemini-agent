@@ -9,7 +9,7 @@ interface LPSolverModel {
   ints: Record<string, 1>;
 }
 
-export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: number): number[] {
+export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: number, horizon: number = 5): number[] {
   const allIds = oracle.getAllPlayerIds();
   
   const model: LPSolverModel = {
@@ -35,7 +35,13 @@ export function solveOptimalSquad(oracle: XPOracle, gameweek: number, budget: nu
 
     const v = `p_${id}`;
     const pos = oracle.getPosition(id).toLowerCase(); // "gkp", "def", "mid", "fwd"
-    const score = oracle.getXP(id, gameweek);
+    
+    // Sum expected points over the lookahead horizon
+    let score = 0;
+    for (let i = 0; i < horizon; i++) {
+      score += oracle.getXP(id, gameweek + i);
+    }
+    
     const cost = oracle.getCost(id);
 
     // Only consider players who have a score > 0 to keep the model small
@@ -73,7 +79,8 @@ export function solveOptimalTransfers(
   gameweek: number, 
   currentSquad: number[], 
   bank: number, 
-  maxTransfers: number
+  maxTransfers: number,
+  horizon: number = 5
 ): { squad: number[]; transfersIn: number[]; transfersOut: number[] } | null {
   const allIds = oracle.getAllPlayerIds();
   const currentSet = new Set(currentSquad);
@@ -107,7 +114,13 @@ export function solveOptimalTransfers(
 
     const v = `p_${id}`;
     const pos = oracle.getPosition(id).toLowerCase();
-    const score = oracle.getXP(id, gameweek);
+    
+    // Sum expected points over the lookahead horizon
+    let score = 0;
+    for (let i = 0; i < horizon; i++) {
+      score += oracle.getXP(id, gameweek + i);
+    }
+    
     const cost = oracle.getCost(id);
     const isCurrent = currentSet.has(id);
 
