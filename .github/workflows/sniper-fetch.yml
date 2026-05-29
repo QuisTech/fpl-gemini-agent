@@ -37,11 +37,11 @@ jobs:
       - name: Fetch FPLForm Data
         if: steps.sniper.outcome == 'success'
         run: npx tsx scripts/fetch-xp.ts
-         
+
       - name: Fetch Top 1k Manager Sentiment
         if: steps.sniper.outcome == 'success'
         run: npx tsx scripts/fetch-top-1k.ts
-         
+
       - name: Commit and Push New Data
         if: steps.sniper.outcome == 'success'
         run: |
@@ -50,3 +50,4 @@ jobs:
           git add data/fplform.csv data/top_1000_eo.json
           git commit -m "Auto-update: Scraped latest FPLForm predictions and Top 1k EO 2 hours before deadline"
           git push
+
