@@ -1,5 +1,5 @@
 import { XPOracle } from './ingestion.js';
-import { solveOptimalSquad } from './lp-solver.js';
+import { solveOptimalSquad, solveOptimalTransfers } from './lp-solver.js';
 
 export interface SquadState {
   squad: number[]; // Array of 15 player IDs
@@ -10,6 +10,10 @@ export interface SquadState {
   accumulatedScore: number;
   activeChip?: string; // e.g. 'WC' active for this week
   firstAction?: string; // Tracks initial step 0 action (ROLL, TRANSFER, WC, etc.)
+  preFhSquad?: number[];
+  preFhBank?: number;
+  firstTransfersIn?: number[];
+  firstTransfersOut?: number[];
 }
 
 export interface Action {
@@ -34,22 +38,26 @@ export class Simulator {
     }
   }
 
-  public simulateMatchday(state: SquadState, gw: number, oracle: XPOracle): number {
+  public simulateMatchday(state: SquadState, gw: number, oracle: XPOracle): { score: number; variance: number } {
     const playerProjections = state.squad.map(id => ({
       id,
       xp: oracle.getXP(id, gw),
+      variance: oracle.getVariance?.(id, gw) ?? (oracle.getXP(id, gw) * 1.5),
       pos: oracle.getPosition(id)
     }));
 
     playerProjections.sort((a, b) => b.xp - a.xp);
 
     let gwScore = 0;
+    let gwVariance = 0;
     if (playerProjections.length > 0) {
       // Triple Captain Chip Check
       if (state.activeChip === 'TC') {
         gwScore += playerProjections[0].xp * 3;
+        gwVariance += playerProjections[0].variance * 9; // 3^2 = 9
       } else {
         gwScore += playerProjections[0].xp * 2;
+        gwVariance += playerProjections[0].variance * 4; // 2^2 = 4
       }
     }
 
@@ -57,9 +65,10 @@ export class Simulator {
     const startersCount = state.activeChip === 'BB' ? 15 : 11;
     for (let i = 1; i < Math.min(startersCount, playerProjections.length); i++) {
       gwScore += playerProjections[i].xp;
+      gwVariance += playerProjections[i].variance;
     }
 
-    return gwScore;
+    return { score: gwScore, variance: gwVariance };
   }
 
   public calculateFitness(state: SquadState): number {
@@ -75,6 +84,15 @@ export class Simulator {
     // 2. Consider Chips
     if (state.chipState['WC'] > 0) {
       actions.push({ type: 'CHIP', chipName: 'WC', hitCost: 0 });
+    }
+    if (state.chipState['FH'] > 0) {
+      actions.push({ type: 'CHIP', chipName: 'FH', hitCost: 0 });
+    }
+    if (state.chipState['BB'] > 0) {
+      actions.push({ type: 'CHIP', chipName: 'BB', hitCost: 0 });
+    }
+    if (state.chipState['TC'] > 0) {
+      actions.push({ type: 'CHIP', chipName: 'TC', hitCost: 0 });
     }
     
     // 3. Generate valid single transfers (1-for-1 swaps)
@@ -116,11 +134,47 @@ export class Simulator {
       });
     });
 
+    // 4. Generate LP-optimized multi-transfer packages (K = 1, 2, 3 transfers)
+    for (let k = 1; k <= 3; k++) {
+      const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k);
+      if (lpResult && lpResult.transfersIn.length > 0) {
+        const transfersCount = lpResult.transfersIn.length;
+        const hitCost = Math.max(0, transfersCount - state.freeTransfers) * 4;
+        
+        // Add to actions if not a duplicate of an existing action
+        const isDuplicate = actions.some(a => 
+          a.type === 'TRANSFER' && 
+          a.transfersIn && 
+          a.transfersIn.length === transfersCount &&
+          a.transfersIn.every(id => lpResult.transfersIn.includes(id)) &&
+          a.transfersOut &&
+          a.transfersOut.every(id => lpResult.transfersOut.includes(id))
+        );
+
+        if (!isDuplicate) {
+          actions.push({
+            type: 'TRANSFER',
+            transfersIn: lpResult.transfersIn,
+            transfersOut: lpResult.transfersOut,
+            hitCost
+          });
+        }
+      }
+    }
+
     return actions;
   }
 
-  public simulateHorizon(initialState: SquadState, oracle: XPOracle): SquadState[] {
+  public simulateHorizon(initialState: SquadState, oracle: XPOracle, riskMode: string = 'safe'): SquadState[] {
     let currentBeam = [initialState];
+
+    // Determine risk-aversion lambda based on riskMode
+    let lambda = 0.05; // default balanced
+    if (riskMode === 'safe') {
+      lambda = 0.15;
+    } else if (riskMode === 'aggressive') {
+      lambda = 0.02;
+    }
 
     for (let step = 0; step < this.maxDepth; step++) {
       const gw = initialState.gameweek + step;
@@ -128,7 +182,17 @@ export class Simulator {
 
       for (const state of currentBeam) {
         // Reset active chip from previous week
-        const currentState = { ...state, activeChip: undefined };
+        let currentState = { ...state, activeChip: undefined };
+        
+        // Revert Free Hit squad and bank, and set freeTransfers to 1
+        if (state.activeChip === 'FH' && state.preFhSquad) {
+          currentState.squad = state.preFhSquad;
+          currentState.bank = state.preFhBank ?? state.bank;
+          currentState.preFhSquad = undefined;
+          currentState.preFhBank = undefined;
+          currentState.freeTransfers = 1;
+        }
+
         const actions = this.generateValidActions(currentState, oracle, gw);
         
         for (const action of actions) {
@@ -143,8 +207,12 @@ export class Simulator {
           // Track first action of trajectory
           if (step === 0) {
             nextState.firstAction = action.type === 'CHIP' ? action.chipName : action.type;
+            nextState.firstTransfersIn = action.transfersIn;
+            nextState.firstTransfersOut = action.transfersOut;
           } else {
             nextState.firstAction = currentState.firstAction;
+            nextState.firstTransfersIn = currentState.firstTransfersIn;
+            nextState.firstTransfersOut = currentState.firstTransfersOut;
           }
 
           if (action.type === 'CHIP' && action.chipName) {
@@ -159,14 +227,25 @@ export class Simulator {
               
               nextState.squad = solveOptimalSquad(oracle, gw, availableBudget);
               nextState.freeTransfers = 1; // Wildcard resets FTs
+            } else if (action.chipName === 'FH') {
+              // Save the pre-Free Hit squad and bank value
+              nextState.preFhSquad = currentState.squad;
+              nextState.preFhBank = currentState.bank;
+              
+              // Rebuild the temporary squad using LP solver
+              let squadValue = 0;
+              nextState.squad.forEach(id => squadValue += oracle.getCost(id));
+              const availableBudget = squadValue + nextState.bank;
+              
+              nextState.squad = solveOptimalSquad(oracle, gw, availableBudget);
             }
           }
 
           if (action.type === 'TRANSFER' && action.transfersIn && action.transfersOut) {
-            // Apply player swap
-            nextState.squad = nextState.squad.map(id => 
-              action.transfersOut!.includes(id) ? action.transfersIn![0] : id
-            );
+            // Apply player swap (multi-transfers: remove all out, push all in)
+            const outSet = new Set(action.transfersOut);
+            nextState.squad = nextState.squad.filter(id => !outSet.has(id));
+            nextState.squad.push(...action.transfersIn);
             
             // Update bank
             const costOut = action.transfersOut.reduce((sum, id) => sum + oracle.getCost(id), 0);
@@ -175,13 +254,16 @@ export class Simulator {
           }
 
           // Calculate next week's free transfers
-          const usedFTs = action.type === 'TRANSFER' ? 1 : 0;
+          const usedFTs = (action.type === 'TRANSFER' && action.transfersIn) ? action.transfersIn.length : 0;
           const remainingFTs = Math.max(0, currentState.freeTransfers - usedFTs);
           nextState.freeTransfers = Math.min(5, remainingFTs + 1);
 
-          // Simulate Matchday
-          const gwPoints = this.simulateMatchday(nextState, gw, oracle);
-          nextState.accumulatedScore += gwPoints - action.hitCost;
+          // Simulate Matchday (Expected Value + Analytical Variance)
+          const { score: gwPoints, variance: gwVariance } = this.simulateMatchday(nextState, gw, oracle);
+          
+          // Risk-adjusted Expected Utility: Score - (lambda * Variance)
+          const gwUtility = gwPoints - (lambda * gwVariance) - action.hitCost;
+          nextState.accumulatedScore += gwUtility;
 
           nextBeam.push(nextState);
         }

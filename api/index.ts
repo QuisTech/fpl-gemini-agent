@@ -271,7 +271,7 @@ export class FPLService {
     // 2. Initialize the V3 Engine (Oracle + Simulator)
     // We try to load the autonomous fplform data, fallback to empty if missing
     // Pass baseData.players so the Oracle can map FPLForm names to real FPL IDs
-    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players, riskMode);
+    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players, riskMode, baseData.fixtures, baseData.teams, baseData.nextEventId);
     const simulator = new Simulator(true); // Vercel mode = true
     
     const initialState = {
@@ -285,7 +285,7 @@ export class FPLService {
 
     // 3. Execute the Multi-Horizon Beam Search
     console.log(`[V3 Engine] Executing Beam Search for Team ${teamId}...`);
-    const bestFutures = simulator.simulateHorizon(initialState, oracle);
+    const bestFutures = simulator.simulateHorizon(initialState, oracle, riskMode);
     
     // 4. Map the V3 Output to the V1 UI format
     // We will look at the immediate next step in the best trajectory
@@ -304,7 +304,24 @@ export class FPLService {
 
     let transfers: TransferRecommendation[] = [];
     if (optimalFirstMove === 'TRANSFER') {
-      transfers = this.generateTransfers(myPicks, candidates);
+      if (bestFutures.length > 0 && bestFutures[0].firstTransfersIn && bestFutures[0].firstTransfersOut) {
+        const ins = bestFutures[0].firstTransfersIn;
+        const outs = bestFutures[0].firstTransfersOut;
+        for (let i = 0; i < ins.length; i++) {
+          const inPlayer = baseData.players.find(p => p.id === ins[i]);
+          const outPlayer = myPicks.find(p => p.id === outs[i]);
+          if (inPlayer && outPlayer) {
+            const inScored = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
+            transfers.push({
+              out: outPlayer,
+              in: inScored,
+              scoreJump: (inScored.score || 0) - (outPlayer.score || 0)
+            });
+          }
+        }
+      } else {
+        transfers = this.generateTransfers(myPicks, candidates);
+      }
     }
 
     const chips: ChipAdvice[] = [
