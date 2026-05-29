@@ -125,6 +125,7 @@ export class FPLService {
       team_name: team?.name || "Unknown",
       team_short_name: team?.short_name || "UNK",
       score: this.calculatePlayerScore(p, fixtures, nextEventId, riskMode),
+      xP: 0,
       ppm: (p.total_points || 0) / (p.now_cost / 10),
       next_fixtures: [],
       isCaptain: false,
@@ -140,7 +141,7 @@ export class FPLService {
     const available = players.filter(p => p.status === 'a' || p.chance_of_playing_next_round === 100);
     const scored = available.map(p => {
       const mapped = this.mapToScoredPlayer(p, teams, fixtures, nextEventId, riskMode);
-      mapped.score = oracle.getXP(p.id, nextEventId);
+      mapped.xP = oracle.getXP(p.id, nextEventId);
       return mapped;
     });
 
@@ -167,7 +168,7 @@ export class FPLService {
       }),
       captain: startingXI.sort(sortByScore)[0] || null,
       viceCaptain: startingXI.sort(sortByScore)[1] || null,
-      expectedPoints: startingXI.reduce((sum, p) => sum + (p.score || 0), 0),
+      expectedPoints: startingXI.reduce((sum, p) => sum + (p.xP || 0), 0),
       totalCost: squad.reduce((sum, p) => sum + (p.now_cost || 0), 0),
       topPicks: {
         gkp: scored.filter(p => p.position === "GKP").sort(sortByScore).slice(0, 5),
@@ -180,23 +181,35 @@ export class FPLService {
     };
   }
 
-  static generateTransfers(squad: ScoredPlayer[], candidates: ScoredPlayer[]): TransferRecommendation[] {
+  static generateTransfers(squad: ScoredPlayer[], candidates: ScoredPlayer[], oracle: CSVOracle, riskMode: string, gameweek: number): TransferRecommendation[] {
     const transfers: TransferRecommendation[] = [];
     const squadIds = new Set(squad.map(p => p.id));
+    const lambda = riskMode === 'safe' ? 0.15 : riskMode === 'aggressive' ? 0.02 : 0.05;
 
     squad.forEach(outPlayer => {
       const betterOptions = candidates.filter(p => 
         p.position === outPlayer.position && 
-        !squadIds.has(p.id) && // Only recommend players NOT already in squad
+        !squadIds.has(p.id) && 
         p.now_cost <= outPlayer.now_cost &&
         (p.score || 0) > (outPlayer.score || 0) + 0.5
       ).sort((a, b) => (b.score || 0) - (a.score || 0));
 
       if (betterOptions.length > 0) {
-        transfers.push({ out: outPlayer, in: betterOptions[0], scoreJump: (betterOptions[0].score || 0) - (outPlayer.score || 0) });
+        const inPlayer = betterOptions[0];
+        const inVar = oracle.getVariance(inPlayer.id, gameweek);
+        const outVar = oracle.getVariance(outPlayer.id, gameweek);
+        const transferUtilityDelta = (inPlayer.xP - outPlayer.xP) - lambda * (inVar - outVar);
+        const xPDelta = inPlayer.xP - outPlayer.xP;
+
+        transfers.push({ 
+          out: outPlayer, 
+          in: inPlayer, 
+          localTransferSignal: transferUtilityDelta, 
+          xPDelta 
+        });
       }
     });
-    return transfers.sort((a, b) => b.scoreJump - a.scoreJump).slice(0, 5);
+    return transfers.sort((a, b) => b.localTransferSignal - a.localTransferSignal).slice(0, 5);
   }
 
   static generateChipAdvice(squad: ScoredPlayer[], riskMode: string): ChipAdvice[] {
@@ -238,15 +251,19 @@ export class FPLService {
     const baseData = await this.getBaseData();
     const currentEvent = Math.max(1, baseData.nextEventId - 1);
     
-    // 1. Fetch live user team
+    // 1. Initialize the V3 Engine Oracle first
+    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players, riskMode, baseData.fixtures, baseData.teams, baseData.nextEventId);
+
+    // 2. Fetch live user team
     const teamRes = await this.fetchWithRetry(`${FPL_BASE_URL}/entry/${teamId}/event/${currentEvent}/picks/`);
 
     const myPicks = teamRes.data.picks.map((p: any) => {
       const player = baseData.players.find((pl: any) => pl.id === p.element);
       if (!player) return null;
-      const mapped = this.mapToScoredPlayer(player, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
+      const baseMapped = this.mapToScoredPlayer(player, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
       return {
-        ...mapped,
+        ...baseMapped,
+        xP: oracle.getXP(player.id, baseData.nextEventId),
         isCaptain: p.is_captain,
         isViceCaptain: p.is_vice_captain,
         position_in_squad: p.position,
@@ -254,10 +271,6 @@ export class FPLService {
       };
     }).filter(Boolean) as ScoredPlayer[];
 
-    // 2. Initialize the V3 Engine (Oracle + Simulator)
-    // We try to load the autonomous fplform data, fallback to empty if missing
-    // Pass baseData.players so the Oracle can map FPLForm names to real FPL IDs
-    const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players, riskMode, baseData.fixtures, baseData.teams, baseData.nextEventId);
     const simulator = new Simulator(true); // Vercel mode = true
     
     const initialState = {
@@ -292,22 +305,31 @@ export class FPLService {
     if (optimalFirstMove === 'TRANSFER' && bestFutures.length > 0 && bestFutures[0].firstTransfersIn && bestFutures[0].firstTransfersOut) {
       const ins = bestFutures[0].firstTransfersIn;
       const outs = bestFutures[0].firstTransfersOut;
+      const lambda = riskMode === 'safe' ? 0.15 : riskMode === 'aggressive' ? 0.02 : 0.05;
       for (let i = 0; i < ins.length; i++) {
         const inPlayer = baseData.players.find(p => p.id === ins[i]);
         const outPlayer = myPicks.find(p => p.id === outs[i]);
         if (inPlayer && outPlayer) {
-          const inScored = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
+          const inMapped = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
+          const inScored = { ...inMapped, xP: oracle.getXP(inPlayer.id, baseData.nextEventId) };
+          
+          const inVar = oracle.getVariance(inPlayer.id, baseData.nextEventId);
+          const outVar = oracle.getVariance(outPlayer.id, baseData.nextEventId);
+          const transferUtilityDelta = (inScored.xP - outPlayer.xP) - lambda * (inVar - outVar);
+          const xPDelta = inScored.xP - outPlayer.xP;
+
           transfers.push({
             out: outPlayer,
             in: inScored,
-            scoreJump: (inScored.score || 0) - (outPlayer.score || 0)
+            localTransferSignal: transferUtilityDelta,
+            xPDelta
           });
         }
       }
     }
 
     if (transfers.length === 0) {
-      transfers = this.generateTransfers(myPicks, candidates);
+      transfers = this.generateTransfers(myPicks, candidates, oracle, riskMode, baseData.nextEventId);
     }
 
     const chips: ChipAdvice[] = [

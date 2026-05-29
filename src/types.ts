@@ -59,6 +59,7 @@ export interface FPLFixture {
 
 export interface ScoredPlayer extends FPLPlayer {
   score: number;
+  xP: number;
   ppm: number;
   team_name: string;
   team_short_name: string;
@@ -89,7 +90,8 @@ export interface RecommendationResponse {
 export interface TransferRecommendation {
   out: ScoredPlayer;
   in: ScoredPlayer;
-  scoreJump: number;
+  localTransferSignal: number;
+  xPDelta: number;
 }
 
 export interface ChipAdvice {

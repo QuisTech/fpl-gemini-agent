@@ -114,10 +114,10 @@ export const TransferView = ({ syncedData }: TransferViewProps) => {
                   // If replacing a benched player, check if incoming player out-performs any starting player in the same position
                   const startersInPosition = startingXI.filter(p => p.position === rec.in.position);
                   const lowestStarter = startersInPosition.length > 0 
-                    ? [...startersInPosition].sort((a, b) => (a.score || 0) - (b.score || 0))[0] 
+                    ? [...startersInPosition].sort((a, b) => (a.xP || 0) - (b.xP || 0))[0] 
                     : null;
                   
-                  const shouldPromote = !isStartingXI && lowestStarter && (rec.in.score || 0) > (lowestStarter.score || 0);
+                  const shouldPromote = !isStartingXI && lowestStarter && (rec.in.xP || 0) > (lowestStarter.xP || 0);
 
                   let roleText = "Enters Bench";
                   let roleStyle = "bg-slate-800 text-slate-300 border border-slate-700";
@@ -196,7 +196,7 @@ export const TransferView = ({ syncedData }: TransferViewProps) => {
                             <div className="w-px h-8 bg-slate-800/80 hidden sm:block"></div>
                             <div className="flex flex-col items-end sm:items-center justify-center min-w-[60px]">
                               <span className="text-sm sm:text-lg font-black text-fpl-green flex items-center gap-0.5">
-                                +{rec.scoreJump.toFixed(1)}
+                                +{rec.xPDelta.toFixed(1)}
                               </span>
                               <span className="text-[8px] text-slate-500 font-bold uppercase">xP Gain</span>
                             </div>
@@ -288,8 +288,8 @@ export const TransferView = ({ syncedData }: TransferViewProps) => {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <span className="text-[10px] font-mono font-black text-slate-400">{(player.score || 0).toFixed(1)}</span>
-                            <span className="text-[7px] text-slate-600 block uppercase font-bold">Score</span>
+                            <span className="text-[10px] font-mono font-black text-slate-400">{(player.xP || 0).toFixed(1)}</span>
+                            <span className="text-[7px] text-slate-600 block uppercase font-bold">xP</span>
                           </div>
                           {isTargetedForSwap && (
                             <span className={cn(
@@ -346,8 +346,8 @@ export const TransferView = ({ syncedData }: TransferViewProps) => {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <span className="text-[10px] font-mono font-black text-slate-400">{(player.score || 0).toFixed(1)}</span>
-                            <span className="text-[7px] text-slate-600 block uppercase font-bold">Score</span>
+                            <span className="text-[10px] font-mono font-black text-slate-400">{(player.xP || 0).toFixed(1)}</span>
+                            <span className="text-[7px] text-slate-600 block uppercase font-bold">xP</span>
                           </div>
                           {isTargetedForSwap && (
                             <span className={cn(
