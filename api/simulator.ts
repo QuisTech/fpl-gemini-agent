@@ -30,8 +30,8 @@ export class Simulator {
 
   constructor(isVercel: boolean = false) {
     if (isVercel) {
-      this.beamWidth = 50;
-      this.maxDepth = 8;
+      this.beamWidth = 30;
+      this.maxDepth = 5;
     } else {
       this.beamWidth = 500;
       this.maxDepth = 8;
@@ -75,7 +75,7 @@ export class Simulator {
     return state.accumulatedScore;
   }
 
-  public generateValidActions(state: SquadState, oracle: XPOracle, gw: number): Action[] {
+  public generateValidActions(state: SquadState, oracle: XPOracle, gw: number, allowLpTransfers: boolean = true): Action[] {
     const actions: Action[] = [];
     
     // 1. Always consider rolling (doing nothing)
@@ -135,29 +135,31 @@ export class Simulator {
     });
 
     // 4. Generate LP-optimized multi-transfer packages (K = 1, 2, 3 transfers)
-    for (let k = 1; k <= 3; k++) {
-      const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k);
-      if (lpResult && lpResult.transfersIn.length > 0) {
-        const transfersCount = lpResult.transfersIn.length;
-        const hitCost = Math.max(0, transfersCount - state.freeTransfers) * 4;
-        
-        // Add to actions if not a duplicate of an existing action
-        const isDuplicate = actions.some(a => 
-          a.type === 'TRANSFER' && 
-          a.transfersIn && 
-          a.transfersIn.length === transfersCount &&
-          a.transfersIn.every(id => lpResult.transfersIn.includes(id)) &&
-          a.transfersOut &&
-          a.transfersOut.every(id => lpResult.transfersOut.includes(id))
-        );
+    if (allowLpTransfers) {
+      for (let k = 1; k <= 3; k++) {
+        const lpResult = solveOptimalTransfers(oracle, gw, state.squad, state.bank, k);
+        if (lpResult && lpResult.transfersIn.length > 0) {
+          const transfersCount = lpResult.transfersIn.length;
+          const hitCost = Math.max(0, transfersCount - state.freeTransfers) * 4;
+          
+          // Add to actions if not a duplicate of an existing action
+          const isDuplicate = actions.some(a => 
+            a.type === 'TRANSFER' && 
+            a.transfersIn && 
+            a.transfersIn.length === transfersCount &&
+            a.transfersIn.every(id => lpResult.transfersIn.includes(id)) &&
+            a.transfersOut &&
+            a.transfersOut.every(id => lpResult.transfersOut.includes(id))
+          );
 
-        if (!isDuplicate) {
-          actions.push({
-            type: 'TRANSFER',
-            transfersIn: lpResult.transfersIn,
-            transfersOut: lpResult.transfersOut,
-            hitCost
-          });
+          if (!isDuplicate) {
+            actions.push({
+              type: 'TRANSFER',
+              transfersIn: lpResult.transfersIn,
+              transfersOut: lpResult.transfersOut,
+              hitCost
+            });
+          }
         }
       }
     }
@@ -193,7 +195,7 @@ export class Simulator {
           currentState.freeTransfers = 1;
         }
 
-        const actions = this.generateValidActions(currentState, oracle, gw);
+        const actions = this.generateValidActions(currentState, oracle, gw, step === 0);
         
         for (const action of actions) {
           const nextState: SquadState = {
