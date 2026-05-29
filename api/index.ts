@@ -289,25 +289,25 @@ export class FPLService {
     ];
 
     let transfers: TransferRecommendation[] = [];
-    if (optimalFirstMove === 'TRANSFER') {
-      if (bestFutures.length > 0 && bestFutures[0].firstTransfersIn && bestFutures[0].firstTransfersOut) {
-        const ins = bestFutures[0].firstTransfersIn;
-        const outs = bestFutures[0].firstTransfersOut;
-        for (let i = 0; i < ins.length; i++) {
-          const inPlayer = baseData.players.find(p => p.id === ins[i]);
-          const outPlayer = myPicks.find(p => p.id === outs[i]);
-          if (inPlayer && outPlayer) {
-            const inScored = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
-            transfers.push({
-              out: outPlayer,
-              in: inScored,
-              scoreJump: (inScored.score || 0) - (outPlayer.score || 0)
-            });
-          }
+    if (optimalFirstMove === 'TRANSFER' && bestFutures.length > 0 && bestFutures[0].firstTransfersIn && bestFutures[0].firstTransfersOut) {
+      const ins = bestFutures[0].firstTransfersIn;
+      const outs = bestFutures[0].firstTransfersOut;
+      for (let i = 0; i < ins.length; i++) {
+        const inPlayer = baseData.players.find(p => p.id === ins[i]);
+        const outPlayer = myPicks.find(p => p.id === outs[i]);
+        if (inPlayer && outPlayer) {
+          const inScored = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
+          transfers.push({
+            out: outPlayer,
+            in: inScored,
+            scoreJump: (inScored.score || 0) - (outPlayer.score || 0)
+          });
         }
-      } else {
-        transfers = this.generateTransfers(myPicks, candidates);
       }
+    }
+
+    if (transfers.length === 0) {
+      transfers = this.generateTransfers(myPicks, candidates);
     }
 
     const chips: ChipAdvice[] = [

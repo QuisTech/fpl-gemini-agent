@@ -6,7 +6,10 @@ import { FPLService } from './api/index.js';
     const response = await FPLService.syncTeam('3018660', 'safe');
     
     console.log('\n--- V3 Engine Output ---');
-    console.log(`Transfers Suggested: ${response.transfers.length > 0 ? 'YES' : 'ROLL'}`);
+    console.log(`Transfers Suggested Count: ${response.transfers.length}`);
+    response.transfers.forEach(t => {
+      console.log(`  - Recommended Swap: Out ${t.out.web_name} -> In ${t.in.web_name} (+${t.scoreJump.toFixed(2)} xP)`);
+    });
     response.chips.forEach(c => {
       if (c.recommendation === 'STRONG BUY') {
         console.log(`🔥 ENGINE TRIGGERED CHIP: ${c.chip}`);
