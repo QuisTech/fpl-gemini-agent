@@ -47,7 +47,7 @@ export const PlayerCard = ({
           {player.web_name}
         </div>
         <div className="text-[8px] sm:text-[9px] font-bold text-fpl-green">
-          {(player?.score || 0).toFixed(1)} <span className="hidden sm:inline">xP</span>
+          {(player?.xP || 0).toFixed(1)} <span className="hidden sm:inline">xP</span>
         </div>
       </div>
     </div>

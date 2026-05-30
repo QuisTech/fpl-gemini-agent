@@ -27,7 +27,7 @@ export const DataGrid = ({ data }: DataGridProps) => {
                   <span className="text-xs font-bold text-slate-200">{p.web_name}</span>
                   <span className="text-[9px] text-slate-500 uppercase font-medium">{p.team_short_name} • £{((p?.now_cost || 0)/10).toFixed(1)}m</span>
                 </div>
-                <span className="text-xs font-mono font-bold text-fpl-green">{(p?.score || 0).toFixed(1)}</span>
+                <span className="text-xs font-mono font-bold text-fpl-green">{(p?.xP || 0).toFixed(1)}</span>
               </div>
             ))}
           </div>
