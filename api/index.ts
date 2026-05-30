@@ -73,9 +73,12 @@ export class FPLService {
     });
 
     const fixtures = z.array(FPLFixtureSchema).parse(fixturesRes.data);
+    const currentEvent = staticRes.data.events.find((e: any) => e.is_current) || 
+                         staticRes.data.events.find((e: any) => e.is_previous) || 
+                         { id: 1 };
     const nextEvent = staticRes.data.events.find((e: any) => new Date(e.deadline_time) > new Date()) || { id: 1 };
     
-    const result = { players, teams, fixtures, nextEventId: nextEvent.id };
+    const result = { players, teams, fixtures, nextEventId: nextEvent.id, currentEventId: currentEvent.id };
     this.cache = { data: result, timestamp: Date.now() };
     return result;
   }
@@ -251,7 +254,7 @@ export class FPLService {
 
   static async syncTeam(teamId: string, riskMode: string): Promise<TeamSyncResponse> {
     const baseData = await this.getBaseData();
-    const currentEvent = Math.max(1, baseData.nextEventId - 1);
+    const currentEvent = baseData.currentEventId || Math.max(1, baseData.nextEventId - 1);
     
     // 1. Initialize the V3 Engine Oracle first
     const oracle = new CSVOracle('data/fplform_scraped.csv', baseData.players, riskMode, baseData.fixtures, baseData.teams, baseData.nextEventId);
