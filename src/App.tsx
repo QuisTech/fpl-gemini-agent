@@ -11,12 +11,13 @@ import { TransferView } from './components/TransferView';
 import { ChipAdvisor } from './components/ChipAdvisor';
 import { PerformanceView } from './components/PerformanceView';
 import { FixtureList } from './components/FixtureList';
+import { OptimizerPositioning } from './components/OptimizerPositioning';
 import { Camera } from 'lucide-react';
 import { cn } from './lib/utils';
 
 export default function App() {
   const [riskMode, setRiskMode] = useState<'safe' | 'aggressive' | 'value'>('safe');
-  const [tab, setTab] = useState<'pitch' | 'picks' | 'transfers' | 'chips' | 'performance'>('pitch');
+  const [tab, setTab] = useState<'optimizer' | 'pitch' | 'picks' | 'transfers' | 'chips' | 'performance'>('optimizer');
   
   const { 
     data, 
@@ -77,7 +78,7 @@ export default function App() {
           <div className="relative z-10 p-4 sm:p-6 h-full flex flex-col">
             <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between mb-8">
               <div className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-xl border border-fpl-border w-full md:w-auto justify-center">
-                {(['pitch', 'picks', 'transfers', 'chips', 'performance'] as const).map((t) => (
+                {(['optimizer', 'pitch', 'picks', 'transfers', 'chips', 'performance'] as const).map((t) => (
                   <button 
                     key={t}
                     onClick={() => setTab(t)}
@@ -118,7 +119,9 @@ export default function App() {
             </div>
 
             <AnimatePresence mode="wait">
-              {tab === 'pitch' ? (
+              {tab === 'optimizer' ? (
+                <OptimizerPositioning />
+              ) : tab === 'pitch' ? (
                 <PitchView data={data} formation={formation} />
               ) : tab === 'picks' ? (
                 <DataGrid data={data} />
