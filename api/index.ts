@@ -142,6 +142,8 @@ export class FPLService {
     const scored = available.map(p => {
       const mapped = this.mapToScoredPlayer(p, teams, fixtures, nextEventId, riskMode);
       mapped.xP = oracle.getXP(p.id, nextEventId);
+      mapped.eo = oracle.getTop1kEO?.(p.id) ?? 0;
+      mapped.ownership = oracle.getTop1kOwnership?.(p.id) ?? parseFloat(p.selected_by_percent || "0") ?? 0;
       return mapped;
     });
 
@@ -264,6 +266,8 @@ export class FPLService {
       return {
         ...baseMapped,
         xP: oracle.getXP(player.id, baseData.nextEventId),
+        eo: oracle.getTop1kEO?.(player.id) ?? 0,
+        ownership: oracle.getTop1kOwnership?.(player.id) ?? parseFloat(player.selected_by_percent || "0") ?? 0,
         isCaptain: p.is_captain,
         isViceCaptain: p.is_vice_captain,
         position_in_squad: p.position,
