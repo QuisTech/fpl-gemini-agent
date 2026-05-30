@@ -378,7 +378,7 @@
     <!-- SECTION 1: INTRODUCTION -->
     <section>
       <h2>The Core Philosophy: Math vs. Variance</h2>
-      <p>Fantasy Premier League is a game of **high short-term variance**. In any given gameweek, random noise (deflections, red cards, missed penalties) can override statistical data. However, over a 38-gameweek season, FPL behaves like a marathon. By using mathematical optimization (Integer Programming and Beam Search simulation), we isolate and exploit the **long-term statistical edge**.</p>
+      <p>Fantasy Premier League is a game of <strong>high short-term variance</strong>. In any given gameweek, random noise (deflections, red cards, missed penalties) can override statistical data. However, over a 38-gameweek season, FPL behaves like a marathon. By using mathematical optimization (Integer Programming and Beam Search simulation), we isolate and exploit the <strong>long-term statistical edge</strong>.</p>
       
       <p>Rather than reacting emotionally to last week’s points, this handbook outlines how to leverage the strategy profiles in your apps to out-grind and out-plan your competition.</p>
     </section>
@@ -386,7 +386,7 @@
     <!-- SECTION 2: THE PLAYBOOKS -->
     <section>
       <h2>Playbook I: Horizon Grand Cru / FPL Optimizer</h2>
-      <p>These apps run the **V3 Grand Cru Engine**, which simulates over 5,000 future paths over an 8-Gameweek horizon. It uses expected utility theory, balancing projected points against statistical variance.</p>
+      <p>These apps run the <strong>V3 Grand Cru Engine</strong>, which simulates over 5,000 future paths over an 8-Gameweek horizon. It uses expected utility theory, balancing projected points against statistical variance.</p>
       
       <div class="timeline">
         <div class="timeline-item">
@@ -424,7 +424,7 @@
     <!-- SECTION 3: STRATEGIST PLAYBOOK -->
     <section>
       <h2>Playbook II: FPL Strategist</h2>
-      <p>FPL Strategist runs a **1-GW lookahead Integer Programming solver**. It maximizes immediate points and handles chips via static heuristics. Because it doesn't automate multi-week planning, you must play the long game manually.</p>
+      <p>FPL Strategist runs a <strong>1-GW lookahead Integer Programming solver</strong>. It maximizes immediate points and handles chips via static heuristics. Because it doesn't automate multi-week planning, you must play the long game manually.</p>
       
       <div class="timeline">
         <div class="timeline-item">
@@ -441,7 +441,7 @@
           <div class="timeline-title">Gameweeks 7–25: Hunting Differentials <span class="timeline-mode mode-risky">RISKY MODE</span></div>
           <p>Switch to <strong>RISKY Mode</strong> to hunt for rank climbs.</p>
           <ul>
-            <li><strong>Mechanism:</strong> The solver automatically applies a <strong>1.25x score multiplier</strong> to low-owned players (< 5% selected by percent).</li>
+            <li><strong>Mechanism:</strong> The solver automatically applies a <strong>1.25x score multiplier</strong> to low-owned players (&lt; 5% selected by percent).</li>
             <li><strong>Execution:</strong> This triggers differential transfer options that bypass mainstream template choices, giving you high-leverage opportunities.</li>
           </ul>
         </div>
@@ -466,11 +466,11 @@
       <div class="grid">
         <div class="card">
           <div class="card-title">V3 Simulation (Horizon/Optimizer)</div>
-          <p>Powered by **multiverse lookahead**. The engine simulates playing the Wildcard, Free Hit, Bench Boost, or Triple Captain *this week* and compares it against saving it. If playing the chip today yields the highest 8-GW expected utility, it triggers a <strong>STRONG BUY</strong>.</p>
+          <p>Powered by <strong>multiverse lookahead</strong>. The engine simulates playing the Wildcard, Free Hit, Bench Boost, or Triple Captain <em>this week</em> and compares it against saving it. If playing the chip today yields the highest 8-GW expected utility, it triggers a <strong>STRONG BUY</strong>.</p>
         </div>
         <div class="card">
           <div class="card-title">Squad Heuristics (Strategist)</div>
-          <p>Powered by **average squad scores**. The engine calculates the average performance score of your 15 players. If it falls below a threshold (due to blank gameweeks or multiple injuries), it suggests a chip play:</p>
+          <p>Powered by <strong>average squad scores</strong>. The engine calculates the average performance score of your 15 players. If it falls below a threshold (due to blank gameweeks or multiple injuries), it suggests a chip play:</p>
           <ul>
             <li><strong>Wildcard:</strong> Triggers if squad average falls below <strong>4.0</strong> (or <strong>5.0</strong> in Risky Mode).</li>
             <li><strong>Free Hit:</strong> Triggers in Risky Mode if average falls below <strong>4.5</strong>.</li>
@@ -482,7 +482,7 @@
         <div class="formula-title">Mathematical Formula for Strategist Chip Triggers</div>
         Squad Average Score = [Sum of (Player merit + Form * 2 + xG * 5 + xA * 3) * Fixtures Difficulty] / 15
         <br><br>
-        If (avgScore < 4.0) -> Recommend WILDCARD (STRONG BUY)
+        If (avgScore &lt; 4.0) &rarr; Recommend WILDCARD (STRONG BUY)
       </div>
     </section>
   </div>
