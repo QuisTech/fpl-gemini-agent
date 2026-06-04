@@ -11,12 +11,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "axios": "^1.15.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dodopayments": "^2.35.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "javascript-lp-solver": "^1.0.3",

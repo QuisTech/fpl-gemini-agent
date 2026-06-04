@@ -1,27 +1,72 @@
-import Stripe from 'stripe';
+import DodoPayments from 'dodopayments';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const dodo = new DodoPayments({
+  secretKey: process.env.DODO_SECRET_KEY,
+  mode: process.env.NODE_ENV === 'production' ? 'live' : 'test'
+});
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   
-  const { userId, tier } = req.body;
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
   
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
+  const { userId, tier, successUrl, cancelUrl } = req.body;
+  
+  if (!userId || !tier) {
+    return res.status(400).json({ error: 'Missing userId or tier' });
+  }
+  
+  // Price IDs from Dodo Payments dashboard
   const prices = {
-    strategist: process.env.STRIPE_PRICE_STRATEGIST,
-    grandCru: process.env.STRIPE_PRICE_GRAND_CRU,
-    aiAgent: process.env.STRIPE_PRICE_AI_AGENT
+    strategist: process.env.DODO_PRICE_STRATEGIST,
+    grandCru: process.env.DODO_PRICE_GRAND_CRU,
+    aiAgent: process.env.DODO_PRICE_AI_AGENT
   };
   
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: [{ price: prices[tier], quantity: 1 }],
-    mode: 'subscription',
-    success_url: `${process.env.APP_URL}/dashboard`,
-    cancel_url: `${process.env.APP_URL}/pricing`,
-    client_reference_id: userId,
-    metadata: { tier }
-  });
+  const priceId = prices[tier];
+  if (!priceId) {
+    return res.status(400).json({ error: 'Invalid tier selected' });
+  }
   
-  res.json({ url: session.url });
+  try {
+    // Create checkout session with Dodo Payments
+    const session = await dodo.checkout.sessions.create({
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1
+        }
+      ],
+      mode: 'subscription',
+      success_url: successUrl || `${process.env.APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${process.env.APP_URL}/pricing`,
+      client_reference_id: userId,
+      metadata: {
+        tier,
+        userId
+      }
+    });
+    
+    // Return the checkout URL
+    res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id
+    });
+    
+  } catch (error) {
+    console.error('Dodo Payments error:', error);
+    res.status(500).json({
+      error: 'Failed to create checkout session',
+      message: error.message
+    });
+  }
 }
