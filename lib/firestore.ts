@@ -54,3 +54,14 @@ export async function getAIDecisions(userId: string, limit = 50): Promise<AIDeci
     ...doc.data()
   } as any));
 }
+
+export async function getUserTier(userId: string): Promise<string> {
+  if (!userId) return 'free';
+  const db = getFirestore();
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (userDoc.exists) {
+    const data = userDoc.data();
+    return data?.tier || 'free';
+  }
+  return 'free';
+}

@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { RecommendationResponse, TeamSyncResponse, ScoredPlayer } from '../types';
 
-export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value') => {
+export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value', userId: string) => {
   const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string>('');
   const [syncedData, setSyncedData] = useState<TeamSyncResponse | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [tier, setTier] = useState<string>('free');
 
   const [history, setHistory] = useState<any>(() => {
     const saved = localStorage.getItem('fpl_optimizer_history');
@@ -21,13 +22,21 @@ export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value') => {
 
   useEffect(() => {
     fetchRecommendations();
-  }, [riskMode, syncedData?.totalCost, syncedData?.bank]);
+  }, [riskMode, syncedData?.totalCost, syncedData?.bank, userId]);
+
+  useEffect(() => {
+    if (userId) {
+      axios.get(`/api/user?userId=${userId}`)
+        .then(res => setTier(res.data.tier))
+        .catch(console.error);
+    }
+  }, [userId]);
 
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
       const budgetQuery = syncedData ? `&budget=${(syncedData.totalCost || 0) + (syncedData.bank || 0)}` : '';
-      const res = await axios.get(`/api/recommendations?riskMode=${riskMode}${budgetQuery}`);
+      const res = await axios.get(`/api/recommendations?riskMode=${riskMode}${budgetQuery}&userId=${userId}`);
       if (res.data) {
         setData(res.data);
       }
@@ -85,7 +94,7 @@ export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value') => {
     if (!teamId) return;
     setSyncing(true);
     try {
-      const res = await axios.get(`/api/sync/${teamId}?riskMode=${riskMode}`);
+      const res = await axios.get(`/api/sync/${teamId}?riskMode=${riskMode}&userId=${userId}`);
       setSyncedData(res.data);
       setError(null);
       return true;
@@ -121,6 +130,7 @@ export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value') => {
     refresh: fetchRecommendations,
     history,
     takeSnapshot,
-    fetchLivePoints
+    fetchLivePoints,
+    tier
   };
 };

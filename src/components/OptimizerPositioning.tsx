@@ -20,7 +20,7 @@ const productLadder = [
   }
 ];
 
-export const OptimizerPositioning = () => {
+export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; currentTier: string }) => {
   return (
     <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar">
       <section className="rounded-2xl border border-fpl-border bg-slate-950/50 p-5 sm:p-6">
@@ -108,7 +108,14 @@ export const OptimizerPositioning = () => {
               ))}
             </div>
 
-            {plan.id === 'free' ? (
+            {plan.id === currentTier ? (
+              <button
+                disabled
+                className="mt-5 w-full rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors bg-slate-800 text-slate-400 cursor-not-allowed"
+              >
+                CURRENT PLAN
+              </button>
+            ) : plan.id === 'free' ? (
               <button
                 className={cn(
                   'mt-5 w-full rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors',
@@ -119,7 +126,7 @@ export const OptimizerPositioning = () => {
               </button>
             ) : (
               <StripeCheckout 
-                userId="test-manager-123" 
+                userId={userId} 
                 tier={plan.id as any} 
                 buttonText={plan.cta}
                 className={cn(

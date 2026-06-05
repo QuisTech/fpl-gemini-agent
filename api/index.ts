@@ -10,6 +10,7 @@ import {
 import { CSVOracle } from './ingestion.js';
 import { Simulator } from './simulator.js';
 import { solveOptimalSquad } from './lp-solver.js';
+import { getUserTier } from '../lib/firestore.js';
 
 const FPL_BASE_URL = "https://fantasy.premierleague.com/api";
 
@@ -136,7 +137,7 @@ export class FPLService {
     };
   }
 
-  static async getRecommendations(riskMode: string, budget: number = 1000): Promise<RecommendationResponse> {
+  static async getRecommendations(riskMode: string, budget: number = 1000, tier: string = 'free'): Promise<RecommendationResponse> {
     const { players, teams, fixtures, nextEventId } = await this.getBaseData();
 
     const oracle = new CSVOracle('data/fplform_scraped.csv', players, riskMode, fixtures, teams, nextEventId);
@@ -150,7 +151,14 @@ export class FPLService {
       return mapped;
     });
 
-    const optimalIds = solveOptimalSquad(oracle, nextEventId, budget, 8, riskMode);
+    let optimalIds: number[] = [];
+    if (tier !== 'free') {
+      optimalIds = solveOptimalSquad(oracle, nextEventId, budget, 8, riskMode);
+    } else {
+      // Free tier: fallback to highest projected points without LP solver
+      optimalIds = scored.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 15).map(p => p.id);
+    }
+    
     const squad = scored.filter(p => optimalIds.includes(p.id));
     
     const sortByScore = (a: ScoredPlayer, b: ScoredPlayer) => (b.score || 0) - (a.score || 0);
@@ -252,7 +260,7 @@ export class FPLService {
     ];
   }
 
-  static async syncTeam(teamId: string, riskMode: string): Promise<TeamSyncResponse> {
+  static async syncTeam(teamId: string, riskMode: string, tier: string = 'free'): Promise<TeamSyncResponse> {
     const baseData = await this.getBaseData();
     const currentEvent = baseData.currentEventId || Math.max(1, baseData.nextEventId - 1);
     
@@ -291,18 +299,19 @@ export class FPLService {
       accumulatedScore: 0
     };
 
-    // 3. Execute the Multi-Horizon Beam Search
-    console.log(`[V3 Engine] Executing Beam Search for Team ${teamId}...`);
-    const bestFutures = simulator.simulateHorizon(initialState, oracle, riskMode);
-    
-    // 4. Map the V3 Output to the V1 UI format
-    // We will look at the immediate next step in the best trajectory
+    // 3. Execute the Multi-Horizon Beam Search (Only for Grand Cru / Beta Pilot)
     let optimalFirstMove = 'ROLL';
-    if (bestFutures.length > 0) {
-      optimalFirstMove = bestFutures[0].firstAction || 'ROLL';
+    let bestFutures: any[] = [];
+    
+    if (tier === 'grandCru' || tier === 'aiAgent' || tier === 'betaPilot') {
+      console.log(`[V3 Engine] Executing Beam Search for Team ${teamId}...`);
+      bestFutures = simulator.simulateHorizon(initialState, oracle, riskMode);
+      if (bestFutures.length > 0) {
+        optimalFirstMove = bestFutures[0].firstAction || 'ROLL';
+      }
     }
 
-    const recommendations = await this.getRecommendations(riskMode);
+    const recommendations = await this.getRecommendations(riskMode, bank, tier);
     const candidates = [
       ...recommendations.topPicks.gkp,
       ...recommendations.topPicks.def,
@@ -311,34 +320,38 @@ export class FPLService {
     ];
 
     let transfers: TransferRecommendation[] = [];
-    if (optimalFirstMove === 'TRANSFER' && bestFutures.length > 0 && bestFutures[0].firstTransfersIn && bestFutures[0].firstTransfersOut) {
-      const ins = bestFutures[0].firstTransfersIn;
-      const outs = bestFutures[0].firstTransfersOut;
-      const lambda = riskMode === 'safe' ? 0.15 : riskMode === 'aggressive' ? 0.02 : 0.05;
-      for (let i = 0; i < ins.length; i++) {
-        const inPlayer = baseData.players.find(p => p.id === ins[i]);
-        const outPlayer = myPicks.find(p => p.id === outs[i]);
-        if (inPlayer && outPlayer) {
-          const inMapped = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
-          const inScored = { ...inMapped, xP: oracle.getXP(inPlayer.id, baseData.nextEventId) };
-          
-          const inVar = oracle.getVariance(inPlayer.id, baseData.nextEventId);
-          const outVar = oracle.getVariance(outPlayer.id, baseData.nextEventId);
-          const transferUtilityDelta = (inScored.xP - outPlayer.xP) - lambda * (inVar - outVar);
-          const xPDelta = inScored.xP - outPlayer.xP;
+    
+    // Only Strategy/GrandCru get optimal transfers
+    if (tier !== 'free') {
+      if (optimalFirstMove === 'TRANSFER' && bestFutures.length > 0 && bestFutures[0].firstTransfersIn && bestFutures[0].firstTransfersOut) {
+        const ins = bestFutures[0].firstTransfersIn;
+        const outs = bestFutures[0].firstTransfersOut;
+        const lambda = riskMode === 'safe' ? 0.15 : riskMode === 'aggressive' ? 0.02 : 0.05;
+        for (let i = 0; i < ins.length; i++) {
+          const inPlayer = baseData.players.find(p => p.id === ins[i]);
+          const outPlayer = myPicks.find(p => p.id === outs[i]);
+          if (inPlayer && outPlayer) {
+            const inMapped = FPLService.mapToScoredPlayer(inPlayer, baseData.teams, baseData.fixtures, baseData.nextEventId, riskMode);
+            const inScored = { ...inMapped, xP: oracle.getXP(inPlayer.id, baseData.nextEventId) };
+            
+            const inVar = oracle.getVariance(inPlayer.id, baseData.nextEventId);
+            const outVar = oracle.getVariance(outPlayer.id, baseData.nextEventId);
+            const transferUtilityDelta = (inScored.xP - outPlayer.xP) - lambda * (inVar - outVar);
+            const xPDelta = inScored.xP - outPlayer.xP;
 
-          transfers.push({
-            out: outPlayer,
-            in: inScored,
-            localTransferSignal: transferUtilityDelta,
-            xPDelta
-          });
+            transfers.push({
+              out: outPlayer,
+              in: inScored,
+              localTransferSignal: transferUtilityDelta,
+              xPDelta
+            });
+          }
         }
       }
-    }
 
-    if (transfers.length === 0) {
-      transfers = this.generateTransfers(myPicks, candidates, oracle, riskMode, baseData.nextEventId);
+      if (transfers.length === 0) {
+        transfers = this.generateTransfers(myPicks, candidates, oracle, riskMode, baseData.nextEventId);
+      }
     }
 
     const chips: ChipAdvice[] = [
@@ -385,17 +398,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const query = req.query || {};
     const riskMode = (query.riskMode as string) || 'safe';
+    const userId = (query.userId as string) || 'unknown';
+    
+    // Default tier if not found in db
+    let tier = 'free';
+
+    if (url.includes('/api/user')) {
+      if (userId === 'unknown') return res.status(400).json({ error: "Missing userId" });
+      tier = await getUserTier(userId);
+      return res.status(200).json({ userId, tier });
+    }
 
     if (url.includes('/api/recommendations')) {
+      tier = await getUserTier(userId);
       const budget = query.budget ? parseInt(query.budget as string) : 1000;
-      const result = await FPLService.getRecommendations(riskMode, budget);
+      const result = await FPLService.getRecommendations(riskMode, budget, tier);
       return res.status(200).json(result);
     } 
     
     if (url.includes('/api/sync')) {
+      tier = await getUserTier(userId);
       const teamId = url.split('/').pop()?.split('?')[0];
       if (!teamId) return res.status(400).json({ error: "Missing Team ID" });
-      const result = await FPLService.syncTeam(teamId, riskMode);
+      const result = await FPLService.syncTeam(teamId, riskMode, tier);
       return res.status(200).json(result);
     }
 

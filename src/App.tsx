@@ -19,6 +19,15 @@ export default function App() {
   const [riskMode, setRiskMode] = useState<'safe' | 'aggressive' | 'value'>('safe');
   const [tab, setTab] = useState<'optimizer' | 'pitch' | 'picks' | 'transfers' | 'chips' | 'performance'>('optimizer');
   
+  const [userId] = useState(() => {
+    let id = localStorage.getItem('fpl_user_id');
+    if (!id) {
+      id = 'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('fpl_user_id', id);
+    }
+    return id;
+  });
+  
   const { 
     data, 
     loading, 
@@ -31,8 +40,9 @@ export default function App() {
     formation,
     history,
     takeSnapshot,
-    fetchLivePoints
-  } = useFPLData(riskMode);
+    fetchLivePoints,
+    tier
+  } = useFPLData(riskMode, userId);
 
   const handleSync = async () => {
     const success = await syncTeam();
@@ -120,17 +130,17 @@ export default function App() {
 
             <AnimatePresence mode="wait">
               {tab === 'optimizer' ? (
-                <OptimizerPositioning />
+                <OptimizerPositioning userId={userId} currentTier={tier} />
               ) : tab === 'pitch' ? (
                 <PitchView data={data} formation={formation} />
               ) : tab === 'picks' ? (
                 <DataGrid data={data} />
               ) : tab === 'transfers' ? (
-                <TransferView syncedData={syncedData} />
+                <TransferView syncedData={syncedData} tier={tier} setTab={setTab} />
               ) : tab === 'performance' ? (
                 <PerformanceView history={history} fetchLivePoints={fetchLivePoints} />
               ) : (
-                <ChipAdvisor syncedData={syncedData} />
+                <ChipAdvisor syncedData={syncedData} tier={tier} setTab={setTab} />
               )}
             </AnimatePresence>
           </div>
