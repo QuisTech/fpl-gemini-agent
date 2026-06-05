@@ -5,7 +5,7 @@ let db: Firestore | null = null;
 export function getFirestore(): Firestore {
   if (!db) {
     db = new Firestore({
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID?.trim(),
       // In development, use emulator if available
       ...(process.env.NODE_ENV === 'development' && process.env.FIRESTORE_EMULATOR_HOST ? {
         host: process.env.FIRESTORE_EMULATOR_HOST,
