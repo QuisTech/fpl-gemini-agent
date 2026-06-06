@@ -69,3 +69,39 @@ export async function getUserTier(userId: string): Promise<string> {
   }
   return 'free';
 }
+
+export async function mergeUserTiers(anonymousId: string, newUserId: string): Promise<boolean> {
+  if (!anonymousId || !newUserId || anonymousId === newUserId) return false;
+  
+  const db = getFirestore();
+  const anonDocRef = db.collection('users').doc(anonymousId);
+  const newDocRef = db.collection('users').doc(newUserId);
+  
+  try {
+    const anonDoc = await anonDocRef.get();
+    if (anonDoc.exists) {
+      const anonData = anonDoc.data();
+      if (anonData?.tier && anonData.tier !== 'free') {
+        // Copy tier to new user
+        await newDocRef.set({
+          tier: anonData.tier,
+          mergedFrom: anonymousId,
+          updatedAt: new Date()
+        }, { merge: true });
+        
+        // Optional: clear the anonymous tier or mark as merged
+        await anonDocRef.update({
+          tier: 'free',
+          mergedTo: newUserId,
+          mergedAt: new Date()
+        });
+        
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error("Error merging user tiers:", error);
+  }
+  
+  return false;
+}

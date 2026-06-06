@@ -12,14 +12,27 @@ import { ChipAdvisor } from './components/ChipAdvisor';
 import { PerformanceView } from './components/PerformanceView';
 import { FixtureList } from './components/FixtureList';
 import { OptimizerPositioning } from './components/OptimizerPositioning';
+import { AuthModal } from './components/AuthModal';
 import { Camera } from 'lucide-react';
 import { cn } from './lib/utils';
+import { auth, onAuthStateChanged, signOut } from './lib/firebase';
+import { useEffect } from 'react';
 
 export default function App() {
   const [riskMode, setRiskMode] = useState<'safe' | 'aggressive' | 'value'>('safe');
   const [tab, setTab] = useState<'optimizer' | 'pitch' | 'picks' | 'transfers' | 'chips' | 'performance'>('optimizer');
   
-  const [userId] = useState(() => {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authUser, setAuthUser] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const [anonymousId] = useState(() => {
     let id = localStorage.getItem('fpl_user_id');
     if (!id) {
       id = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -27,6 +40,8 @@ export default function App() {
     }
     return id;
   });
+  
+  const activeUserId = authUser?.uid || anonymousId;
   
   const { 
     data, 
@@ -42,7 +57,7 @@ export default function App() {
     takeSnapshot,
     fetchLivePoints,
     tier
-  } = useFPLData(riskMode, userId);
+  } = useFPLData(riskMode, activeUserId);
 
   const handleSync = async () => {
     const success = await syncTeam();
@@ -76,8 +91,14 @@ export default function App() {
       )}
       <div className="max-w-[1400px] mx-auto grid grid-cols-12 gap-4 auto-rows-min">
 
-        
-        <Header data={data} riskMode={riskMode} setRiskMode={setRiskMode} />
+        <Header 
+          data={data} 
+          riskMode={riskMode} 
+          setRiskMode={setRiskMode} 
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          authUser={authUser}
+          onSignOut={() => signOut(auth)}
+        />
 
         <MetricsColumn data={data} syncedData={syncedData} riskMode={riskMode} />
 
@@ -130,7 +151,7 @@ export default function App() {
 
             <AnimatePresence mode="wait">
               {tab === 'optimizer' ? (
-                <OptimizerPositioning userId={userId} currentTier={tier} />
+                <OptimizerPositioning userId={activeUserId} currentTier={tier} />
               ) : tab === 'pitch' ? (
                 <PitchView data={data} formation={formation} />
               ) : tab === 'picks' ? (
@@ -170,6 +191,11 @@ export default function App() {
           <FixtureList data={data} />
         </div>
       </div>
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        anonymousId={anonymousId}
+      />
     </div>
   );
 }

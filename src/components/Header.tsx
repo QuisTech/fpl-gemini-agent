@@ -5,9 +5,14 @@ interface HeaderProps {
   data: RecommendationResponse | null;
   riskMode: 'safe' | 'aggressive' | 'value';
   setRiskMode: (mode: 'safe' | 'aggressive' | 'value') => void;
+  onOpenAuth: () => void;
+  authUser: any;
+  onSignOut: () => void;
 }
 
-export const Header = ({ data, riskMode, setRiskMode }: HeaderProps) => {
+import { UserCircle, LogOut } from 'lucide-react';
+
+export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, onSignOut }: HeaderProps) => {
   return (
     <header className="col-span-12 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
       <div className="flex items-center gap-4">
@@ -54,6 +59,32 @@ export const Header = ({ data, riskMode, setRiskMode }: HeaderProps) => {
           <span className="text-[10px] uppercase tracking-widest text-slate-400 font-medium">Expected Points</span>
           <span className="text-xl font-bold text-fpl-green tabular-nums">+{(data?.expectedPoints || 0).toFixed(1)} xP</span>
         </div>
+        
+        <div className="h-8 w-px bg-slate-800 hidden sm:block"></div>
+        
+        {authUser ? (
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col text-right hidden sm:flex">
+              <span className="text-[10px] font-bold text-slate-300">{authUser.email?.split('@')[0]}</span>
+              <span className="text-[8px] uppercase text-fpl-green">Claimed</span>
+            </div>
+            <button 
+              onClick={onSignOut}
+              className="w-8 h-8 rounded-full bg-slate-900 border border-fpl-border flex items-center justify-center text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={onOpenAuth}
+            className="flex items-center gap-2 bg-fpl-green text-slate-950 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-fpl-green/90 transition-colors"
+          >
+            <UserCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign In</span>
+          </button>
+        )}
       </div>
     </header>
   );

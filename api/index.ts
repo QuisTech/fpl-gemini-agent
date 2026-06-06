@@ -10,7 +10,7 @@ import {
 import { CSVOracle } from './ingestion.js';
 import { Simulator } from './simulator.js';
 import { solveOptimalSquad } from './lp-solver.js';
-import { getUserTier } from '../lib/firestore.js';
+import { getUserTier, mergeUserTiers } from '../lib/firestore.js';
 
 const FPL_BASE_URL = "https://fantasy.premierleague.com/api";
 
@@ -407,6 +407,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (userId === 'unknown') return res.status(400).json({ error: "Missing userId" });
       tier = await getUserTier(userId);
       return res.status(200).json({ userId, tier });
+    }
+
+    if (url.includes('/api/auth/merge') && req.method === 'POST') {
+      const { newUserId, anonymousId } = req.body || {};
+      if (!newUserId || !anonymousId) return res.status(400).json({ error: "Missing user IDs" });
+      
+      const success = await mergeUserTiers(anonymousId, newUserId);
+      return res.status(200).json({ success });
     }
 
     if (url.includes('/api/recommendations')) {
