@@ -4,13 +4,16 @@ import { TeamSyncResponse } from '../types';
 
 import { ShieldCheck } from 'lucide-react';
 
+import { StripeCheckout } from './StripeCheckout';
+
 interface ChipAdvisorProps {
   syncedData: TeamSyncResponse | null;
   tier: string;
   setTab: (tab: any) => void;
+  userId: string;
 }
 
-export const ChipAdvisor = ({ syncedData, tier, setTab }: ChipAdvisorProps) => {
+export const ChipAdvisor = ({ syncedData, tier, setTab, userId }: ChipAdvisorProps) => {
   return (
     <motion.div
       key="chip-view"
@@ -31,12 +34,12 @@ export const ChipAdvisor = ({ syncedData, tier, setTab }: ChipAdvisorProps) => {
                Unlock the Beam Search Simulator to evaluate multi-horizon chip projections for Wildcard, Free Hit, and Bench Boost.
              </p>
            </div>
-           <button 
-             onClick={() => window.location.href = "https://checkout.dodopayments.com/session/cks_0NgQggYVpAp38tKpJAt7o"}
+           <StripeCheckout 
+             userId={userId} 
+             tier="grandCru" 
+             buttonText="Upgrade to Grand Cru"
              className="bg-fpl-green text-slate-950 hover:bg-fpl-green/90 text-[10px] font-black px-4 py-2 rounded-lg transition-colors uppercase tracking-widest mt-2"
-           >
-             Upgrade to Grand Cru
-           </button>
+           />
          </div>
        ) : !syncedData ? (
          <div className="p-8 text-center text-slate-500 text-sm italic">Sync your team to get personalized chip advice based on your current roster.</div>

@@ -157,11 +157,11 @@ export default function App() {
               ) : tab === 'picks' ? (
                 <DataGrid data={data} />
               ) : tab === 'transfers' ? (
-                <TransferView syncedData={syncedData} tier={tier} setTab={setTab} />
+                <TransferView syncedData={syncedData} tier={tier} setTab={setTab} userId={activeUserId} />
               ) : tab === 'performance' ? (
                 <PerformanceView history={history} fetchLivePoints={fetchLivePoints} />
               ) : (
-                <ChipAdvisor syncedData={syncedData} tier={tier} setTab={setTab} />
+                <ChipAdvisor syncedData={syncedData} tier={tier} setTab={setTab} userId={activeUserId} />
               )}
             </AnimatePresence>
           </div>

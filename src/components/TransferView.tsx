@@ -11,13 +11,16 @@ import {
 import { TeamSyncResponse } from '../types';
 import { cn } from '../lib/utils';
 
+import { StripeCheckout } from './StripeCheckout';
+
 interface TransferViewProps {
   syncedData: TeamSyncResponse | null;
   tier: string;
   setTab: (tab: any) => void;
+  userId: string;
 }
 
-export const TransferView = ({ syncedData, tier, setTab }: TransferViewProps) => {
+export const TransferView = ({ syncedData, tier, setTab, userId }: TransferViewProps) => {
   const [activeTab, setActiveTab] = useState<'all' | 'squad' | 'transfers'>('all');
   const [hoveredSwapIndex, setHoveredSwapIndex] = useState<number | null>(null);
 
@@ -112,12 +115,12 @@ export const TransferView = ({ syncedData, tier, setTab }: TransferViewProps) =>
                     Unlock the LP Solver to instantly calculate the mathematically optimal transfer for your exact squad and budget.
                   </p>
                 </div>
-                <button 
-                  onClick={() => window.location.href = "https://checkout.dodopayments.com/session/cks_0NgQgZyt3EeoTj2DnZGSy"}
-                  className="bg-fpl-green text-slate-950 hover:bg-fpl-green/90 text-[10px] font-black px-4 py-2 rounded-lg transition-colors uppercase tracking-widest mt-2"
-                >
-                  Upgrade to Strategist
-                </button>
+                <StripeCheckout 
+            userId={userId} 
+            tier="strategist" 
+            buttonText="Upgrade to Strategist"
+            className="bg-fpl-green text-slate-950 hover:bg-fpl-green/90 text-[10px] font-black px-4 py-2 rounded-lg transition-colors uppercase tracking-widest mt-2"
+          />
               </div>
             ) : transfers.length === 0 ? (
               <div className="text-center py-6 bg-slate-950/20 border border-dashed border-fpl-border rounded-2xl text-slate-500 text-xs">
