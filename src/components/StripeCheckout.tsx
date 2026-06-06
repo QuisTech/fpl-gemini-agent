@@ -25,9 +25,9 @@ export const StripeCheckout = ({ userId, tier, buttonText, className }: Props) =
 
   const handleCheckout = () => {
     setLoading(true);
-    // Append userId to the checkout link if Dodopayments supports tracking it
+    // Append userId to the checkout link so the webhook knows who paid
     const baseUrl = paymentLinks[tier];
-    window.location.href = baseUrl;
+    window.location.href = `${baseUrl}?client_reference_id=${userId}`;
   };
 
   return (
