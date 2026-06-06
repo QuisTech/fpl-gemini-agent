@@ -50,9 +50,22 @@ export default async function handler(req, res) {
         
         console.log(`Webhook triggered for user: ${userId}, upgrading to tier: ${tier}`);
         
-        await db.collection('users').doc(userId).set({
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        const currentTier = userDoc.exists ? (userDoc.data()?.tier || 'free') : 'free';
+        
+        const tierHierarchy: Record<string, number> = { free: 0, strategist: 1, grandCru: 2, aiAgent: 3 };
+        
+        let finalTier = tier;
+        // Prevent downgrading from older delayed webhook retries
+        if ((tierHierarchy[currentTier] || 0) > (tierHierarchy[tier] || 0)) {
+           finalTier = currentTier;
+           console.log(`[Safety] Prevented downgrade: User is already ${currentTier}, ignoring ${tier} webhook`);
+        }
+
+        await userRef.set({
           dodoCustomerId: session.customer_id || session.customer?.customer_id || '',
-          tier: tier,
+          tier: finalTier,
           status: 'active',
           subscriptionId: session.subscription_id || session.subscription || '',
           updatedAt: new Date()
