@@ -6,6 +6,21 @@ const dodo = new DodoPayments({
   environment: process.env.DODO_SECRET_KEY?.includes('test') ? 'test_mode' : 'live_mode'
 });
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+async function getRawBody(req: any): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk: any) => body += chunk);
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -18,9 +33,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const rawBody = await getRawBody(req);
+    
     // Verify webhook signature
     const event = dodo.webhooks.unwrap(
-      typeof req.body === 'string' ? req.body : JSON.stringify(req.body),
+      rawBody,
       {
         headers: req.headers as Record<string, string>,
         key: process.env.DODO_WEBHOOK_SECRET?.trim()
