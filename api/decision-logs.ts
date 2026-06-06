@@ -1,6 +1,6 @@
-import { Firestore } from '@google-cloud/firestore';
+import { getFirestore } from '../lib/firestore.js';
 
-const db = new Firestore();
+const db = getFirestore();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

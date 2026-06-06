@@ -11,6 +11,7 @@ import { CSVOracle } from './ingestion.js';
 import { Simulator } from './simulator.js';
 import { solveOptimalSquad } from './lp-solver.js';
 import { getUserTier, mergeUserTiers } from '../lib/firestore.js';
+import { getGeminiTransferDecision } from './gemini-agent.js';
 
 const FPL_BASE_URL = "https://fantasy.premierleague.com/api";
 
@@ -401,7 +402,7 @@ export class FPLService {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const url = req.url || "/";
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
@@ -446,6 +447,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!eventId) return res.status(400).json({ error: "Missing Event ID" });
       const liveRes = await axios.get(`${FPL_BASE_URL}/event/${eventId}/live/`, { headers: (FPLService as any).getHeaders() });
       return res.status(200).json(liveRes.data);
+    }
+
+    if (url.includes('/api/agent/ask') && req.method === 'POST') {
+      const { userId: reqUserId, gameweek, squad, bank, freeTransfers = 1, chips = {}, riskMode = 'safe' } = req.body || {};
+      if (!reqUserId || !squad) return res.status(400).json({ error: "Missing payload" });
+      
+      const userTier = await getUserTier(reqUserId);
+      if (userTier !== 'aiAgent') {
+        return res.status(403).json({ error: "AI Agent tier required" });
+      }
+
+      // Fetch fixtures
+      const fixturesRes = await axios.get(`${FPL_BASE_URL}/fixtures/`, { headers: (FPLService as any).getHeaders() });
+      const upcoming = fixturesRes.data.filter((f: any) => f.event >= gameweek && f.event < gameweek + 5);
+
+      const decision = await getGeminiTransferDecision(
+        reqUserId, squad, gameweek, upcoming, bank, freeTransfers, chips, riskMode
+      );
+      
+      return res.status(200).json({ decision });
     }
 
     if (url.includes('/api/ping')) {

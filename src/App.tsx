@@ -13,6 +13,7 @@ import { PerformanceView } from './components/PerformanceView';
 import { FixtureList } from './components/FixtureList';
 import { OptimizerPositioning } from './components/OptimizerPositioning';
 import { AuthModal } from './components/AuthModal';
+import { AIAgentView } from './components/AIAgentView';
 import { Camera } from 'lucide-react';
 import { cn } from './lib/utils';
 import { auth, onAuthStateChanged, signOut } from './lib/firebase';
@@ -20,7 +21,7 @@ import { useEffect } from 'react';
 
 export default function App() {
   const [riskMode, setRiskMode] = useState<'safe' | 'aggressive' | 'value'>('safe');
-  const [tab, setTab] = useState<'optimizer' | 'pitch' | 'picks' | 'transfers' | 'chips' | 'performance'>('optimizer');
+  const [tab, setTab] = useState<'optimizer' | 'pitch' | 'picks' | 'transfers' | 'chips' | 'performance' | 'agent'>('optimizer');
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authUser, setAuthUser] = useState<any>(null);
@@ -109,7 +110,7 @@ export default function App() {
           <div className="relative z-10 p-4 sm:p-6 h-full flex flex-col">
             <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between mb-8">
               <div className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-xl border border-fpl-border w-full md:w-auto justify-center">
-                {(['optimizer', 'pitch', 'picks', 'transfers', 'chips', 'performance'] as const).map((t) => (
+                {(['optimizer', 'pitch', 'picks', 'transfers', 'chips', 'performance', 'agent'] as const).map((t) => (
                   <button 
                     key={t}
                     onClick={() => setTab(t)}
@@ -160,8 +161,10 @@ export default function App() {
                 <TransferView syncedData={syncedData} tier={tier} setTab={setTab} userId={activeUserId} />
               ) : tab === 'performance' ? (
                 <PerformanceView history={history} fetchLivePoints={fetchLivePoints} />
-              ) : (
+              ) : tab === 'chips' ? (
                 <ChipAdvisor syncedData={syncedData} tier={tier} setTab={setTab} userId={activeUserId} />
+              ) : (
+                <AIAgentView syncedData={syncedData} tier={tier} userId={activeUserId} />
               )}
             </AnimatePresence>
           </div>
