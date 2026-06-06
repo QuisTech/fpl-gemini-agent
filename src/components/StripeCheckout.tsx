@@ -14,29 +14,20 @@ const tierPrices = {
   aiAgent: '$49.99'
 };
 
+const paymentLinks = {
+  strategist: 'https://checkout.dodopayments.com/session/cks_0NgQgZyt3EeoTj2DnZGSy',
+  grandCru: 'https://checkout.dodopayments.com/session/cks_0NgQggYVpAp38tKpJAt7o',
+  aiAgent: 'https://checkout.dodopayments.com/session/cks_0NgQgmS8TLNbOn0XMsxLV'
+};
+
 export const StripeCheckout = ({ userId, tier, buttonText, className }: Props) => {
   const [loading, setLoading] = useState(false);
 
-  const handleCheckout = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, tier })
-      });
-      const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Checkout failed: " + (data.error || data.message || 'Unknown error'));
-        setLoading(false);
-      }
-    } catch (err: any) {
-      alert("Failed to connect to checkout service.");
-      setLoading(false);
-    }
+  const handleCheckout = () => {
+    setLoading(true);
+    // Append userId to the checkout link if Dodopayments supports tracking it
+    const baseUrl = paymentLinks[tier];
+    window.location.href = baseUrl;
   };
 
   return (
