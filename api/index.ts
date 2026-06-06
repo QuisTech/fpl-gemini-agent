@@ -151,34 +151,43 @@ export class FPLService {
       return mapped;
     });
 
-    let optimalIds: number[] = [];
+    let squad: ScoredPlayer[] = [];
+    const sortByScore = (a: ScoredPlayer, b: ScoredPlayer) => (b.score || 0) - (a.score || 0);
+
     if (tier !== 'free') {
-      optimalIds = solveOptimalSquad(oracle, nextEventId, budget, 8, riskMode);
+      const optimalIds = solveOptimalSquad(oracle, nextEventId, budget, 8, riskMode);
+      squad = scored.filter(p => optimalIds.includes(p.id));
     } else {
-      // Free tier: fallback to highest projected points without LP solver
-      optimalIds = scored.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 15).map(p => p.id);
+      // Free tier: fallback to highest projected points enforcing 15-man constraints
+      const gkps = scored.filter(p => p.position === 'GKP').sort(sortByScore).slice(0, 2);
+      const defs = scored.filter(p => p.position === 'DEF').sort(sortByScore).slice(0, 5);
+      const mids = scored.filter(p => p.position === 'MID').sort(sortByScore).slice(0, 5);
+      const fwds = scored.filter(p => p.position === 'FWD').sort(sortByScore).slice(0, 3);
+      squad = [...gkps, ...defs, ...mids, ...fwds];
     }
     
-    const squad = scored.filter(p => optimalIds.includes(p.id));
-    
-    const sortByScore = (a: ScoredPlayer, b: ScoredPlayer) => (b.score || 0) - (a.score || 0);
     const gkps = squad.filter(p => p.position === "GKP").sort(sortByScore);
     const defs = squad.filter(p => p.position === "DEF").sort(sortByScore);
     const mids = squad.filter(p => p.position === "MID").sort(sortByScore);
     const fwds = squad.filter(p => p.position === "FWD").sort(sortByScore);
     
+    // FPL Rules: 1 GKP, min 3 DEF, min 2 MID, min 1 FWD
     const mandatory = [gkps[0], ...defs.slice(0, 3), ...mids.slice(0, 2), ...fwds.slice(0, 1)].filter(Boolean) as ScoredPlayer[];
-    const lockedIds = new Set(mandatory.map(p => p.id));
-    const others = squad.filter(p => !lockedIds.has(p.id)).sort(sortByScore);
-    const startingXI = [...mandatory, ...others.slice(0, 11 - mandatory.length)].filter(Boolean) as ScoredPlayer[];
+    const availableOutfielders = [...defs.slice(3), ...mids.slice(2), ...fwds.slice(1)].sort(sortByScore);
     
+    // Pick the top 4 remaining outfielders to complete the XI
+    const extraOutfielders = availableOutfielders.slice(0, 4);
+    const startingXI = [...mandatory, ...extraOutfielders].filter(Boolean) as ScoredPlayer[];
+    
+    const startingIds = new Set(startingXI.map(p => p.id));
+    const bench = squad.filter(p => !startingIds.has(p.id)).sort((a, b) => {
+      if (a.position === 'GKP' && b.position !== 'GKP') return -1;
+      if (a.position !== 'GKP' && b.position === 'GKP') return 1;
+      return (b.score || 0) - (a.score || 0);
+    });
     return { 
       squad, startingXI, 
-      bench: squad.filter(p => !startingXI.find(x => x.id === p.id)).sort((a, b) => {
-        if (a.position === 'GKP' && b.position !== 'GKP') return -1;
-        if (a.position !== 'GKP' && b.position === 'GKP') return 1;
-        return (b.score || 0) - (a.score || 0);
-      }),
+      bench,
       captain: startingXI.sort(sortByScore)[0] || null,
       viceCaptain: startingXI.sort(sortByScore)[1] || null,
       expectedPoints: startingXI.reduce((sum, p) => sum + (p.xP || 0), 0),
