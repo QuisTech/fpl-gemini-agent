@@ -32,7 +32,7 @@ export const ChipAdvisor = ({ syncedData, tier, setTab }: ChipAdvisorProps) => {
              </p>
            </div>
            <button 
-             onClick={() => setTab('optimizer')}
+             onClick={() => window.location.href = "https://checkout.dodopayments.com/session/cks_0NgQggYVpAp38tKpJAt7o"}
              className="bg-fpl-green text-slate-950 hover:bg-fpl-green/90 text-[10px] font-black px-4 py-2 rounded-lg transition-colors uppercase tracking-widest mt-2"
            >
              Upgrade to Grand Cru
