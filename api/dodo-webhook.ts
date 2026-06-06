@@ -1,12 +1,10 @@
 import DodoPayments from 'dodopayments';
-import { Firestore } from '@google-cloud/firestore';
+import { getFirestore } from '../lib/firestore.js';
 
 const dodo = new DodoPayments({
   bearerToken: process.env.DODO_SECRET_KEY?.trim(),
   environment: process.env.DODO_SECRET_KEY?.includes('test') ? 'test_mode' : 'live_mode'
 });
-
-const db = new Firestore();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -33,9 +31,15 @@ export default async function handler(req, res) {
       case 'payment.succeeded':
       case 'subscription.active': {
         const session = event.data as any;
-        await db.collection('users').doc(session.client_reference_id || session.customer_id || session.metadata?.userId || 'unknown').set({
+        const db = getFirestore();
+        const userId = session.metadata?.userId || session.client_reference_id || session.customer_id || 'unknown';
+        const tier = session.metadata?.tier || 'free';
+        
+        console.log(`Webhook triggered for user: ${userId}, upgrading to tier: ${tier}`);
+        
+        await db.collection('users').doc(userId).set({
           dodoCustomerId: session.customer_id || session.customer?.customer_id || '',
-          tier: session.metadata?.tier || 'free',
+          tier: tier,
           status: 'active',
           subscriptionId: session.subscription_id || session.subscription || '',
           updatedAt: new Date()
@@ -55,6 +59,7 @@ export default async function handler(req, res) {
 
       case 'subscription.cancelled': {
         const subscription = event.data as any;
+        const db = getFirestore();
         const userQuery = await db.collection('users')
           .where('subscriptionId', '==', subscription.subscription_id || subscription.id)
           .limit(1)
