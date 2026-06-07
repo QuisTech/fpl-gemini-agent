@@ -20,6 +20,34 @@ export function getFirestore(): Firestore {
   return db;
 }
 
+export interface UserProfile {
+  userId: string;
+  email: string;
+  displayName: string;
+  username: string;
+  avatar?: string;
+  phoneNumber?: string;
+  language: 'en' | 'es' | 'fr';
+  fplTeamId?: string;
+  fplVerified: boolean;
+  tier?: string;
+  seasonGoal?: 'top10k' | 'top100k' | 'top1m' | 'winMiniLeague';
+  preferences: {
+    defaultRiskMode: 'safe' | 'aggressive' | 'value';
+    emailNotifications: boolean;
+    deadlineReminders: boolean;
+    weeklyReports: boolean;
+  };
+  connectedAccounts: {
+    google?: { uid: string; email: string };
+    github?: { uid: string; username: string };
+    facebook?: { uid: string; email: string };
+  };
+  lastLoginAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface AIDecision {
   userId: string;
   gameweek: number;

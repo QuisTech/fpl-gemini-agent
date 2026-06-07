@@ -34,6 +34,16 @@ async function startServer() {
     }
   });
 
+  app.all("/api/user-profile", async (req, res) => {
+    try {
+      const handler = (await import("./api/user-profile")).default;
+      await handler(req, res);
+    } catch (error: any) {
+      console.error("Local Dev Profile Error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/recommendations", async (req, res) => {
     try {
       const riskMode = (req.query.riskMode as string) || 'safe';

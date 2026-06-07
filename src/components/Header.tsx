@@ -10,9 +10,12 @@ interface HeaderProps {
   onSignOut: () => void;
 }
 
-import { UserCircle, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { UserProfile } from './UserProfile';
+import { UserCircle, LogOut, User } from 'lucide-react';
 
 export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, onSignOut }: HeaderProps) => {
+  const [showProfile, setShowProfile] = useState(false);
   return (
     <header className="col-span-12 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
       <div className="flex items-center gap-4">
@@ -63,19 +66,31 @@ export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, onSi
         <div className="h-8 w-px bg-slate-800 hidden sm:block"></div>
         
         {authUser ? (
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col text-right hidden sm:flex">
-              <span className="text-[10px] font-bold text-slate-300">{authUser.email?.split('@')[0]}</span>
-              <span className="text-[8px] uppercase text-fpl-green">Claimed</span>
-            </div>
+          <>
             <button 
-              onClick={onSignOut}
-              className="w-8 h-8 rounded-full bg-slate-900 border border-fpl-border flex items-center justify-center text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
-              title="Sign Out"
+              onClick={() => setShowProfile(true)}
+              className="flex items-center gap-3 hover:bg-slate-900 rounded-lg p-2 transition-colors"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <div className="flex flex-col text-right hidden sm:flex">
+                <span className="text-[10px] font-bold text-slate-300">{authUser.email?.split('@')[0]}</span>
+                <span className="text-[8px] uppercase text-fpl-green">{authUser.tier || 'Claimed'}</span>
+              </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-fpl-green to-fpl-purple rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
             </button>
-          </div>
+            {showProfile && (
+              <UserProfile 
+                user={{
+                  email: authUser.email,
+                  displayName: authUser.displayName || authUser.email?.split('@')[0],
+                  tier: authUser.tier || 'Claimed'
+                }} 
+                onClose={() => setShowProfile(false)} 
+                onSignOut={onSignOut}
+              />
+            )}
+          </>
         ) : (
           <button 
             onClick={onOpenAuth}

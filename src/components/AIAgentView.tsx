@@ -27,7 +27,7 @@ export const AIAgentView = ({ syncedData, tier, userId }: AIAgentViewProps) => {
       // Create body matching getGeminiTransferDecision signature roughly
       const res = await axios.post('/api/agent/ask', {
         userId,
-        gameweek: syncedData.transfers[0]?.gameweek || 1,
+        gameweek: (syncedData as any).gameweek || 1,
         squad: syncedData.squad,
         bank: syncedData.bank,
         totalCost: syncedData.totalCost,
