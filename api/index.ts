@@ -454,8 +454,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!reqUserId || !squad) return res.status(400).json({ error: "Missing payload" });
       
       const userTier = await getUserTier(reqUserId);
-      if (userTier !== 'aiAgent') {
-        return res.status(403).json({ error: "AI Agent tier required" });
+      if (userTier !== 'aiAgent' && userTier !== 'betaPilot') {
+        return res.status(403).json({ error: "Beta Pilot tier required" });
       }
 
       // Fetch fixtures

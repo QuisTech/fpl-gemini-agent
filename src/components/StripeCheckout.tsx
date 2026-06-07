@@ -3,7 +3,7 @@ import { cn } from '../lib/utils';
 
 interface Props {
   userId: string;
-  tier: 'strategist' | 'grandCru' | 'aiAgent';
+  tier: 'strategist' | 'grandCru' | 'aiAgent' | 'betaPilot';
   buttonText?: string;
   className?: string;
 }
@@ -11,7 +11,8 @@ interface Props {
 const tierPrices = {
   strategist: '$9.99',
   grandCru: '$24.99',
-  aiAgent: '$49.99'
+  aiAgent: '$49.99',
+  betaPilot: '$49.99'
 };
 
 export const StripeCheckout = ({ userId, tier, buttonText, className }: Props) => {

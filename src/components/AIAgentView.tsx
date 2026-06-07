@@ -45,7 +45,7 @@ export const AIAgentView = ({ syncedData, tier, userId }: AIAgentViewProps) => {
     }
   };
 
-  if (tier !== 'aiAgent' && tier !== 'grandCru' && tier !== 'betaPilot') {
+  if (tier !== 'aiAgent' && tier !== 'betaPilot') {
     return (
       <motion.div
         key="agent-locked"
@@ -75,7 +75,7 @@ export const AIAgentView = ({ syncedData, tier, userId }: AIAgentViewProps) => {
 
         <StripeCheckout 
           userId={userId} 
-          tier="aiAgent" 
+          tier="betaPilot" 
           buttonText="Unlock AI Agent (£49.99/mo)"
           className="bg-fpl-green text-slate-950 hover:bg-fpl-green/90 text-xs font-black px-6 py-3 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-fpl-green/20"
         />

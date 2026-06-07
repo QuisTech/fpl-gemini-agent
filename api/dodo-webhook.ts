@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         const userDoc = await userRef.get();
         const currentTier = userDoc.exists ? (userDoc.data()?.tier || 'free') : 'free';
         
-        const tierHierarchy: Record<string, number> = { free: 0, strategist: 1, grandCru: 2, aiAgent: 3 };
+        const tierHierarchy: Record<string, number> = { free: 0, strategist: 1, grandCru: 2, aiAgent: 3, betaPilot: 4 };
         
         let finalTier = tier;
         // Prevent downgrading from older delayed webhook retries
