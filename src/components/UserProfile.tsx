@@ -51,7 +51,7 @@ export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: 
           </div>
           
           {/* Tabs */}
-          <div className="flex gap-1 px-6 pt-4 border-b border-fpl-border">
+          <div className="flex gap-1 px-4 sm:px-6 pt-4 border-b border-fpl-border overflow-x-auto scrollbar-hide shrink-0 whitespace-nowrap">
             {tabs.map(tab => (
               <button
                 key={tab.id}

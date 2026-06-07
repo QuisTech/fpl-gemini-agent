@@ -45,7 +45,7 @@ export const AIAgentView = ({ syncedData, tier, userId }: AIAgentViewProps) => {
     }
   };
 
-  if (tier !== 'aiAgent') {
+  if (tier !== 'aiAgent' && tier !== 'grandCru' && tier !== 'betaPilot') {
     return (
       <motion.div
         key="agent-locked"

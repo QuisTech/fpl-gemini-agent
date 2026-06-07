@@ -1,4 +1,4 @@
-import { getFirestore } from "../lib/firestore";
+import { getFirestore } from "../lib/firestore.js";
 import type { Request, Response } from "express";
 
 export default async function handler(req: Request, res: Response) {
