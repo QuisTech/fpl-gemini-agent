@@ -11,7 +11,9 @@ interface MetricsColumnProps {
 export const MetricsColumn = ({ data, syncedData, riskMode }: MetricsColumnProps) => {
   const isSynced = !!syncedData;
   const squadValue = isSynced ? (syncedData.totalCost || 0) : (data?.totalCost || 0);
-  const itb = isSynced ? (syncedData.bank || 0) : (1000 - (data?.totalCost || 0));
+  const itb = isSynced
+    ? (syncedData.bank || 0)
+    : Math.max(0, 1000 - (data?.totalCost || 0));
   const badgeText = isSynced ? "MY SQUAD" : "OPTIMAL";
 
   return (
@@ -39,10 +41,10 @@ export const MetricsColumn = ({ data, syncedData, riskMode }: MetricsColumnProps
           <div className="flex justify-between items-center text-[11px]">
             <span className="text-slate-400">Risk Profile</span>
             <span className={cn(
-              "font-bold uppercase", 
-              riskMode === 'aggressive' ? "text-orange-400" : 
-              riskMode === 'value' ? "text-cyan-400" : 
-              "text-fpl-green"
+              "font-bold uppercase",
+              riskMode === 'aggressive' ? "text-orange-400" :
+                riskMode === 'value' ? "text-cyan-400" :
+                  "text-fpl-green"
             )}>{riskMode}</span>
           </div>
         </div>
