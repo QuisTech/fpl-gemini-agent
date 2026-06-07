@@ -2,6 +2,10 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/api/decision-logs",
+      "destination": "/api/decision-logs.ts"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
     },
@@ -14,6 +18,9 @@
     "api/index.ts": {
       "maxDuration": 30,
       "includeFiles": "data/**"
+    },
+    "api/decision-logs.ts": {
+      "maxDuration": 15
     }
   }
 }

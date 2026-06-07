@@ -1,10 +1,12 @@
 import { getFirestore } from '../lib/firestore.js';
 
-const db = getFirestore();
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,6 +15,19 @@ export default async function handler(req, res) {
   
   if (!userId) {
     return res.status(400).json({ error: 'Missing userId' });
+  }
+
+  let db;
+  try {
+    db = getFirestore();
+  } catch (dbError: any) {
+    console.error('[DecisionLogs] Firestore init failed:', dbError.message);
+    return res.status(503).json({ 
+      error: 'Database temporarily unavailable',
+      decisions: [],
+      revenue: { transactions: [], total: 0, currency: 'USD' },
+      metadata: { lastUpdated: new Date().toISOString() }
+    });
   }
 
   try {
@@ -29,21 +44,26 @@ export default async function handler(req, res) {
       timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp
     }));
 
-    // Get revenue from Dodo Payments
-    const revenueSnapshot = await db.collection('revenue')
-      .where('userId', '==', userId)
-      .orderBy('timestamp', 'desc')
-      .limit(100)
-      .get();
-    
-    const revenue = revenueSnapshot.docs.map(doc => ({
-      amount: doc.data().amount,
-      tier: doc.data().tier,
-      currency: doc.data().currency,
-      timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp
-    }));
-
-    const totalRevenue = revenue.reduce((sum, r) => sum + r.amount, 0);
+    // Get revenue from Dodo Payments — wrapped separately so it can't crash decisions
+    let revenue: any[] = [];
+    let totalRevenue = 0;
+    try {
+      const revenueSnapshot = await db.collection('revenue')
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc')
+        .limit(100)
+        .get();
+      
+      revenue = revenueSnapshot.docs.map(doc => ({
+        amount: doc.data().amount,
+        tier: doc.data().tier,
+        currency: doc.data().currency,
+        timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp
+      }));
+      totalRevenue = revenue.reduce((sum, r) => sum + r.amount, 0);
+    } catch (revError: any) {
+      console.warn('[DecisionLogs] Revenue query failed (non-fatal):', revError.message);
+    }
 
     res.json({
       success: true,
@@ -57,8 +77,21 @@ export default async function handler(req, res) {
         lastUpdated: new Date().toISOString()
       }
     });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message });
+  } catch (error: any) {
+    console.error('[DecisionLogs] Query error:', error.message);
+    
+    // Check if it's a Firestore index error
+    if (error.message?.includes('index')) {
+      console.error('[DecisionLogs] HINT: You may need to create a Firestore composite index. Check the URL in the error above.');
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to fetch decision logs',
+      message: error.message,
+      // Still return empty structure so the frontend doesn't break
+      decisions: [],
+      revenue: { transactions: [], total: 0, currency: 'USD' },
+      metadata: { lastUpdated: new Date().toISOString() }
+    });
   }
 }

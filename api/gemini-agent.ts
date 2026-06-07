@@ -1,7 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-import { getFirestore, logAIDecision } from '../lib/firestore.js';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { callGeminiWithFallback, GeminiExhaustedError } from '../lib/gemini-client.js';
+import { logAIDecision } from '../lib/firestore.js';
 
 export interface TransferDecision {
   action: 'ROLL' | 'TRANSFER' | 'CHIP';
@@ -10,6 +8,24 @@ export interface TransferDecision {
   chipName?: 'WC' | 'FH' | 'BB' | 'TC';
   reasoning: string;
   confidence: number;
+}
+
+/**
+ * Safely parse JSON from Gemini response text.
+ * Handles markdown-wrapped JSON (```json ... ```) and malformed responses.
+ */
+function safeParseJSON(text: string): any {
+  // Strip markdown code fences if present
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("[GeminiAgent] Failed to parse JSON response:", cleaned.substring(0, 200));
+    throw new Error(`Invalid JSON from Gemini: ${(e as Error).message}`);
+  }
 }
 
 export async function getGeminiTransferDecision(
@@ -25,7 +41,7 @@ export async function getGeminiTransferDecision(
   
   // Build context for Gemini
   const squadSummary = squad.map(p => 
-    `${p.name} (${p.position}) - ┬Ż${(p.cost/10).toFixed(1)}M - xP: ${p.xP}`
+    `${p.name} (${p.position}) - £${(p.cost/10).toFixed(1)}M - xP: ${p.xP}`
   ).join('\n');
   
   const fixturesSummary = fixtures.slice(0, 5).map(f => 
@@ -38,7 +54,7 @@ export async function getGeminiTransferDecision(
     GAMEWEEK: ${gameweek}
     RISK MODE: ${riskMode.toUpperCase()}
     FREE TRANSFERS: ${freeTransfers}
-    BANK: ┬Ż${(bank/10).toFixed(1)}M
+    BANK: £${(bank/10).toFixed(1)}M
     
     CURRENT SQUAD:
     ${squadSummary}
@@ -60,19 +76,16 @@ export async function getGeminiTransferDecision(
     }
   `;
   
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    config: {
-      temperature: 0.3,
-      responseMimeType: "application/json"
-    }
+  const result = await callGeminiWithFallback({
+    prompt,
+    temperature: 0.3,
+    jsonMode: true,
   });
+
+  const decision = safeParseJSON(result.text);
   
-  const decision = JSON.parse(response.text);
-  
-  // Log the decision to Firestore
-  await logAIDecision({
+  // Log the decision to Firestore (non-blocking — don't let log failure crash the response)
+  logAIDecision({
     userId,
     gameweek,
     decision: decision.action,
@@ -83,8 +96,10 @@ export async function getGeminiTransferDecision(
       transfersOut: decision.transfersOut,
       chipName: decision.chipName
     },
-    modelUsed: 'gemini-2.0-flash',
+    modelUsed: result.modelUsed,
     riskMode
+  }).catch(err => {
+    console.error("[GeminiAgent] Non-fatal: Failed to log decision to Firestore:", err.message);
   });
   
   return decision;
@@ -108,22 +123,25 @@ export async function getGeminiChipAdvice(
     Respond with JSON: {"recommendation": "WC/HOLD/etc", "reasoning": "...", "confidence": 0-100}
   `;
   
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    config: { temperature: 0.2, responseMimeType: "application/json" }
+  const result = await callGeminiWithFallback({
+    prompt,
+    temperature: 0.2,
+    jsonMode: true,
   });
+
+  const decision = safeParseJSON(result.text);
   
-  const decision = JSON.parse(response.text);
-  
-  await logAIDecision({
+  // Non-blocking Firestore log
+  logAIDecision({
     userId,
     gameweek,
     decision: `CHIP_${decision.recommendation}`,
     reasoning: decision.reasoning,
     confidence: decision.confidence,
     details: { chipName: decision.recommendation !== 'HOLD' ? decision.recommendation : undefined },
-    modelUsed: 'gemini-2.0-flash'
+    modelUsed: result.modelUsed
+  }).catch(err => {
+    console.error("[GeminiAgent] Non-fatal: Failed to log chip advice to Firestore:", err.message);
   });
   
   return decision;
