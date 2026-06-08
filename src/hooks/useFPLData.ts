@@ -106,8 +106,9 @@ export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value', userId: st
       setSyncedData(res.data);
       setError(null);
       return true;
-    } catch (err) {
-      setError("Failed to sync team. Check your Team ID.");
+    } catch (err: any) {
+      setSyncedData(null);
+      setError(err.response?.data?.error || "Failed to sync team. Check your Team ID.");
       return false;
     } finally {
       setSyncing(false);

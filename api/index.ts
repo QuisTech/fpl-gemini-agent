@@ -10,7 +10,7 @@ import {
 import { CSVOracle } from './ingestion.js';
 import { Simulator } from './simulator.js';
 import { solveOptimalSquad } from './lp-solver.js';
-import { getUserTier, mergeUserTiers } from '../lib/firestore.js';
+import { getUserTier, mergeUserTiers, getFirestore } from '../lib/firestore.js';
 import { getGeminiTransferDecision } from './gemini-agent.js';
 
 const FPL_BASE_URL = "https://fantasy.premierleague.com/api";
@@ -438,6 +438,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tier = await getUserTier(userId);
       const teamId = url.split('/').pop()?.split('?')[0];
       if (!teamId) return res.status(400).json({ error: "Missing Team ID" });
+      
+      const db = getFirestore();
+      const profileDoc = await db.collection('user_profiles').doc(userId).get();
+      const registeredTeamId = profileDoc.exists ? profileDoc.data()?.fplTeamId : null;
+      
+      if (tier !== 'free' && registeredTeamId && teamId !== registeredTeamId) {
+        return res.status(403).json({ error: "Premium features are securely locked to your registered FPL Team ID." });
+      }
+
       const result = await FPLService.syncTeam(teamId, riskMode, tier);
       return res.status(200).json(result);
     }
