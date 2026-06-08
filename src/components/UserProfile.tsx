@@ -144,7 +144,7 @@ export const UserProfile = ({ user, onClose, onSignOut, onTeamIdChange }: { user
                           />
                         ) : (
                           <p className="text-lg font-bold text-white font-mono mt-1">
-                            {user?.fplTeamId || 'Not set'}
+                            {fplTeamId || 'Not set'}
                           </p>
                         )}
                       </div>
