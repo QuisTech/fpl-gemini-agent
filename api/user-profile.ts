@@ -23,6 +23,15 @@ export default async function handler(req: Request, res: Response) {
     if (req.method === 'PUT') {
       // Update profile
       const updates = req.body;
+      
+      // If trying to set fplTeamId, check if one already exists
+      if (updates.fplTeamId) {
+        const existingDoc = await db.collection('user_profiles').doc(userId).get();
+        if (existingDoc.exists && existingDoc.data()?.fplTeamId) {
+          return res.status(403).json({ error: "FPL Team ID is permanently locked to your account and cannot be changed." });
+        }
+      }
+
       await db.collection('user_profiles').doc(userId).set(updates, { merge: true });
       return res.json({ success: true });
     }

@@ -4,19 +4,23 @@ import axios from 'axios';
 import { 
   User, Mail, Key, Globe, CreditCard, 
   Github, Facebook, Chrome, Trash2,
-  Shield, CheckCircle, Edit2, RefreshCw
+  Shield, CheckCircle, Edit2, RefreshCw, Lock
 } from 'lucide-react';
 
 export const UserProfile = ({ user, onClose, onSignOut, onTeamIdChange }: { user: any, onClose: () => void, onSignOut: () => void, onTeamIdChange?: (id: string) => void }) => {
   const [activeTab, setActiveTab] = useState('account');
   const [editingFplId, setEditingFplId] = useState(false);
   const [fplTeamId, setFplTeamId] = useState(user?.fplTeamId || '');
+  const [isLocked, setIsLocked] = useState(!!user?.fplTeamId);
   const [savingId, setSavingId] = useState(false);
 
   useEffect(() => {
     if (user?.uid) {
       axios.get(`/api/user-profile?userId=${user.uid}`).then(res => {
-        if (res.data?.fplTeamId) setFplTeamId(res.data.fplTeamId);
+        if (res.data?.fplTeamId) {
+          setFplTeamId(res.data.fplTeamId);
+          setIsLocked(true);
+        }
       }).catch(() => {});
     }
   }, [user?.uid]);
@@ -148,7 +152,11 @@ export const UserProfile = ({ user, onClose, onSignOut, onTeamIdChange }: { user
                           </p>
                         )}
                       </div>
-                      {editingFplId ? (
+                      {isLocked ? (
+                        <div className="flex items-center gap-1 text-xs text-slate-500 font-bold bg-slate-900 px-3 py-1 rounded">
+                          <Lock className="w-3 h-3" /> Locked
+                        </div>
+                      ) : editingFplId ? (
                         <div className="flex gap-2">
                           <button 
                             onClick={async () => {
@@ -156,10 +164,11 @@ export const UserProfile = ({ user, onClose, onSignOut, onTeamIdChange }: { user
                               setSavingId(true);
                               try {
                                 await axios.put(`/api/user-profile?userId=${user.uid}`, { fplTeamId });
+                                setIsLocked(true);
                                 if (onTeamIdChange) onTeamIdChange(fplTeamId);
                                 setEditingFplId(false);
-                              } catch (e) {
-                                alert("Failed to save FPL Team ID");
+                              } catch (e: any) {
+                                alert(e.response?.data?.error || "Failed to save FPL Team ID");
                               } finally {
                                 setSavingId(false);
                               }
@@ -171,7 +180,7 @@ export const UserProfile = ({ user, onClose, onSignOut, onTeamIdChange }: { user
                           </button>
                           <button 
                             onClick={() => setEditingFplId(false)}
-                            className="text-xs bg-slate-800 px-3 py-1 rounded"
+                            className="text-xs bg-slate-800 px-3 py-1 rounded text-white"
                           >
                             Cancel
                           </button>
