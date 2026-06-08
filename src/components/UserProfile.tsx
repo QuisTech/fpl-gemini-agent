@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import axios from 'axios';
 import { 
   User, Mail, Key, Globe, CreditCard, 
   Github, Facebook, Chrome, Trash2,
@@ -10,6 +11,15 @@ export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: 
   const [activeTab, setActiveTab] = useState('account');
   const [editingFplId, setEditingFplId] = useState(false);
   const [fplTeamId, setFplTeamId] = useState(user?.fplTeamId || '');
+  const [savingId, setSavingId] = useState(false);
+
+  useEffect(() => {
+    if (user?.uid) {
+      axios.get(`/api/user-profile?userId=${user.uid}`).then(res => {
+        if (res.data?.fplTeamId) setFplTeamId(res.data.fplTeamId);
+      }).catch(() => {});
+    }
+  }, [user?.uid]);
   
   const tabs = [
     { id: 'account', label: 'Account', icon: User },
@@ -141,13 +151,22 @@ export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: 
                       {editingFplId ? (
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => {
-                              // Save FPL ID
-                              setEditingFplId(false);
+                            onClick={async () => {
+                              if (!user?.uid) return;
+                              setSavingId(true);
+                              try {
+                                await axios.put(`/api/user-profile?userId=${user.uid}`, { fplTeamId });
+                                setEditingFplId(false);
+                              } catch (e) {
+                                alert("Failed to save FPL Team ID");
+                              } finally {
+                                setSavingId(false);
+                              }
                             }}
-                            className="text-xs bg-fpl-green text-slate-950 px-3 py-1 rounded font-bold"
+                            disabled={savingId}
+                            className="text-xs bg-fpl-green text-slate-950 px-3 py-1 rounded font-bold disabled:opacity-50"
                           >
-                            Save
+                            {savingId ? 'Saving...' : 'Save'}
                           </button>
                           <button 
                             onClick={() => setEditingFplId(false)}
@@ -254,7 +273,10 @@ export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: 
                   </div>
                 </div>
                 
-                <button className="w-full text-left p-3 bg-slate-900 rounded-xl text-sm">
+                <button 
+                  onClick={() => alert('To view invoice history, please check your email for Dodo Payments receipts or contact support.')}
+                  className="w-full text-left p-3 bg-slate-900 rounded-xl text-sm hover:bg-slate-800 transition-colors"
+                >
                   View Invoice History →
                 </button>
               </div>
@@ -270,7 +292,21 @@ export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: 
               Sign Out
             </button>
             
-            <button className="text-xs text-slate-500 hover:text-rose-400 flex items-center gap-1">
+            <button 
+              onClick={async () => {
+                if (!user?.uid) return;
+                if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                  try {
+                    await axios.delete(`/api/user-profile?userId=${user.uid}`);
+                    onSignOut();
+                    onClose();
+                  } catch (e) {
+                    alert("Failed to delete account");
+                  }
+                }
+              }}
+              className="text-xs text-slate-500 hover:text-rose-400 flex items-center gap-1"
+            >
               <Trash2 className="w-3 h-3" />
               Delete Account
             </button>

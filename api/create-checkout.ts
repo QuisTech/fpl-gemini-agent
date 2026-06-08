@@ -28,7 +28,8 @@ export default async function handler(req, res) {
   const productIds = {
     strategist: process.env.DODO_PRICE_STRATEGIST?.trim(),
     grandCru: process.env.DODO_PRICE_GRAND_CRU?.trim(),
-    aiAgent: process.env.DODO_PRICE_AI_AGENT?.trim()
+    aiAgent: process.env.DODO_PRICE_AI_AGENT?.trim(),
+    betaPilot: process.env.DODO_PRICE_AI_AGENT?.trim()
   };
   
   const productId = productIds[tier];

@@ -1,4 +1,4 @@
-export type OptimizerTierId = 'free' | 'strategist' | 'grandCru' | 'aiAgent';
+export type OptimizerTierId = 'free' | 'strategist' | 'grandCru' | 'betaPilot';
 
 export interface OptimizerPlan {
   id: OptimizerTierId;
@@ -59,7 +59,7 @@ export const optimizerPlans: OptimizerPlan[] = [
     ]
   },
   {
-    id: 'aiAgent',
+    id: 'betaPilot',
     name: 'AI Optimizer Agent',
     price: 'GBP 49.99',
     cadence: 'per month',
@@ -79,11 +79,11 @@ export const optimizerPlans: OptimizerPlan[] = [
 ];
 
 export const tierFeatureMatrix = [
-  { feature: 'Optimal squad', free: 'Basic', strategist: 'LP', grandCru: 'LP + horizon', aiAgent: 'LP + Multiverse' },
-  { feature: 'Team sync', free: 'Locked', strategist: 'Included', grandCru: 'Included', aiAgent: 'Included' },
-  { feature: 'Transfer logic', free: 'Locked', strategist: '1-for-1', grandCru: 'Multi-transfer', aiAgent: 'Multi-transfer' },
-  { feature: 'Chip advice', free: 'Locked', strategist: 'Rules', grandCru: 'Simulated', aiAgent: 'Simulated' },
-  { feature: 'Lookahead', free: '1 GW', strategist: '1 GW', grandCru: '8 GWs', aiAgent: '8 GWs' },
-  { feature: 'AI Conversational Chat', free: 'Locked', strategist: 'Locked', grandCru: 'Locked', aiAgent: 'Included' },
-  { feature: 'Injury & News Parser', free: 'Locked', strategist: 'Locked', grandCru: 'Locked', aiAgent: 'Included' }
+  { feature: 'Optimal squad', free: 'Basic', strategist: 'LP', grandCru: 'LP + horizon', betaPilot: 'LP + Multiverse' },
+  { feature: 'Team sync', free: 'Locked', strategist: 'Included', grandCru: 'Included', betaPilot: 'Included' },
+  { feature: 'Transfer logic', free: 'Locked', strategist: '1-for-1', grandCru: 'Multi-transfer', betaPilot: 'Multi-transfer' },
+  { feature: 'Chip advice', free: 'Locked', strategist: 'Rules', grandCru: 'Simulated', betaPilot: 'Simulated' },
+  { feature: 'Lookahead', free: '1 GW', strategist: '1 GW', grandCru: '8 GWs', betaPilot: '8 GWs' },
+  { feature: 'AI Conversational Chat', free: 'Locked', strategist: 'Locked', grandCru: 'Locked', betaPilot: 'Included' },
+  { feature: 'Injury & News Parser', free: 'Locked', strategist: 'Locked', grandCru: 'Locked', betaPilot: 'Included' }
 ];

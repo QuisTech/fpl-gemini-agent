@@ -76,7 +76,13 @@ export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; 
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-        {optimizerPlans.map((plan) => (
+        {optimizerPlans.map((plan) => {
+          const tierHierarchy: Record<string, number> = { free: 0, strategist: 1, grandCru: 2, betaPilot: 3 };
+          const currentTierValue = tierHierarchy[currentTier] || 0;
+          const planTierValue = tierHierarchy[plan.id] || 0;
+          const isIncluded = planTierValue < currentTierValue && currentTier !== 'free';
+
+          return (
           <div
             key={plan.id}
             className={cn(
@@ -115,6 +121,13 @@ export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; 
               >
                 CURRENT PLAN
               </button>
+            ) : isIncluded ? (
+              <button
+                disabled
+                className="mt-5 w-full rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors bg-fpl-green/10 text-fpl-green border border-fpl-green/20 cursor-default"
+              >
+                INCLUDED IN PLAN
+              </button>
             ) : plan.id === 'free' ? (
               <button
                 className={cn(
@@ -136,7 +149,7 @@ export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; 
               />
             )}
           </div>
-        ))}
+        )})}
       </section>
 
       <section className="rounded-2xl border border-fpl-border bg-card-bg overflow-hidden">
@@ -168,7 +181,7 @@ export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; 
                   <td className="px-4 py-3">{row.free}</td>
                   <td className="px-4 py-3">{row.strategist}</td>
                   <td className="px-4 py-3">{row.grandCru}</td>
-                  <td className="px-4 py-3 text-fpl-green font-bold">{row.aiAgent}</td>
+                  <td className="px-4 py-3 text-fpl-green font-bold">{row.betaPilot}</td>
                 </tr>
               ))}
             </tbody>

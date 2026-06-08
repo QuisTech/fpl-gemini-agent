@@ -7,6 +7,7 @@ interface HeaderProps {
   setRiskMode: (mode: 'safe' | 'aggressive' | 'value') => void;
   onOpenAuth: () => void;
   authUser: any;
+  tier: string;
   onSignOut: () => void;
 }
 
@@ -14,7 +15,7 @@ import { useState } from 'react';
 import { UserProfile } from './UserProfile';
 import { UserCircle, LogOut, User } from 'lucide-react';
 
-export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, onSignOut }: HeaderProps) => {
+export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, tier, onSignOut }: HeaderProps) => {
   const [showProfile, setShowProfile] = useState(false);
   return (
     <header className="col-span-12 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
@@ -73,7 +74,7 @@ export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, onSi
             >
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="text-[10px] font-bold text-slate-300">{authUser.email?.split('@')[0]}</span>
-                <span className="text-[8px] uppercase text-fpl-green">{authUser.tier || 'Claimed'}</span>
+                <span className="text-[8px] uppercase text-fpl-green">{tier || 'Claimed'}</span>
               </div>
               <div className="w-8 h-8 bg-gradient-to-br from-fpl-green to-fpl-purple rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
@@ -84,7 +85,9 @@ export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, onSi
                 user={{
                   email: authUser.email,
                   displayName: authUser.displayName || authUser.email?.split('@')[0],
-                  tier: authUser.tier || 'Claimed'
+                  tier: tier || 'free',
+                  uid: authUser.uid,
+                  lastLoginAt: authUser.metadata?.lastSignInTime
                 }} 
                 onClose={() => setShowProfile(false)} 
                 onSignOut={onSignOut}
