@@ -1,6 +1,6 @@
 # FPL Optimizer (V3)
 
-An elite Fantasy Premier League (FPL) optimization engine that uses a **Multi-Horizon Beam Search** and **Linear Programming (LP)** to project the absolute mathematical optimum for your squad across multiple gameweeks.
+An elite Fantasy Premier League (FPL) optimization engine that uses **Multi-Horizon Beam Search**, **Linear Programming (LP)**, and **Generative AI** to project the absolute mathematical and contextual optimum for your squad.
 
 ## 🚀 The V3 Architecture
 
@@ -16,10 +16,21 @@ Unlike traditional FPL tools that only look at the immediate upcoming gameweek, 
    - Built on `javascript-lp-solver`.
    - Used heavily during `Wildcard` and `Free Hit` simulation branches. When a chip is played in a simulated future, the Simulator passes the exact available budget to the LP Solver, which instantly returns the mathematically perfect 15-man squad for that Gameweek horizon.
 
-3. **The Autonomous Oracle (`scripts/fetch-xp.ts` & `scripts/check-deadline.ts`)**
-   - The engine is powered by Expected Points (xP) data ingested from FPLForm.
+3. **Gemini AI Agent (`api/agent/ask.ts`)**
+   - A natural language FPL assistant powered by Google Gemini 2.0 Flash.
+   - The agent acts as a Beta Pilot, parsing press conferences, injury reports, and tactical nuances that pure mathematics might miss, giving users an edge in their decision-making.
+
+4. **The Autonomous Oracle (`scripts/fetch-xp.ts` & `scripts/check-deadline.ts`)**
+   - Powered by Expected Points (xP) data ingested from FPLForm.
    - We utilize a **"Sniper Bot"** GitHub Action (`.github/workflows/sniper-fetch.yml`). 
    - Every hour, the bot checks the Official FPL API for the upcoming deadline. Exactly 1-2 hours before the deadline (after all press conferences and leaks), it fires up a headless Playwright browser, scrapes the freshest xP data, and commits it back to the repository autonomously.
+
+## 💳 Monetization & Tiers
+
+The V3 engine is fully monetized using Stripe and Firebase Auth, offering distinct tiers:
+- **Free Tier**: Basic Pitch View and xP metrics.
+- **Strategist Tier (£9.99/mo)**: Unlocks the full Multi-Horizon Simulation Engine and LP Solver for multi-gameweek transfer planning.
+- **Beta Pilot Tier (£49.99/mo)**: Unlocks the elite Gemini AI Agent, providing full contextual analysis and natural language tactical advice.
 
 ## ⚙️ Running Locally
 
@@ -28,12 +39,15 @@ Unlike traditional FPL tools that only look at the immediate upcoming gameweek, 
 npm install
 ```
 
-2. Run the development server:
+2. Configure Environment Variables (`.env`):
+Set up your Firebase credentials, Stripe secret keys, and Gemini API keys.
+
+3. Run the development server:
 ```bash
 npm run dev
 ```
 
-3. Test the V3 Engine locally (without spinning up the frontend):
+4. Test the V3 Engine locally (without spinning up the frontend):
 ```bash
 npx tsx test_api.ts
 ```
@@ -46,6 +60,3 @@ To deploy manually:
 ```bash
 npx vercel --prod
 ```
-
-## 🤝 Using "Elite 1000" EO Data
-To take the optimization to the next level, you can manually input FPLReview "Elite 1000" Effective Ownership (EO) data into the Oracle. This allows the Engine to calculate **Risk Penalties**. If a player has >100% Elite EO, the Engine knows that *not* owning them is a mathematical rank risk, and will adjust its transfers accordingly.
