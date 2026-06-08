@@ -92,7 +92,7 @@ export default function App() {
       )}
       <div className="max-w-[1400px] mx-auto grid grid-cols-12 gap-4 auto-rows-min">
 
-        <Header data={data} riskMode={riskMode} setRiskMode={setRiskMode} authUser={authUser} tier={tier} onOpenAuth={() => setIsAuthModalOpen(true)} onSignOut={() => signOut(auth)} />
+        <Header data={data} riskMode={riskMode} setRiskMode={setRiskMode} authUser={authUser} tier={tier} onOpenAuth={() => setIsAuthModalOpen(true)} onSignOut={() => signOut(auth)} setTeamId={setTeamId} />
 
         <MetricsColumn data={data} syncedData={syncedData} riskMode={riskMode} />
 

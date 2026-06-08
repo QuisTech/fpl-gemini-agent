@@ -7,7 +7,7 @@ import {
   Shield, CheckCircle, Edit2, RefreshCw
 } from 'lucide-react';
 
-export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: () => void, onSignOut: () => void }) => {
+export const UserProfile = ({ user, onClose, onSignOut, onTeamIdChange }: { user: any, onClose: () => void, onSignOut: () => void, onTeamIdChange?: (id: string) => void }) => {
   const [activeTab, setActiveTab] = useState('account');
   const [editingFplId, setEditingFplId] = useState(false);
   const [fplTeamId, setFplTeamId] = useState(user?.fplTeamId || '');
@@ -156,6 +156,7 @@ export const UserProfile = ({ user, onClose, onSignOut }: { user: any, onClose: 
                               setSavingId(true);
                               try {
                                 await axios.put(`/api/user-profile?userId=${user.uid}`, { fplTeamId });
+                                if (onTeamIdChange) onTeamIdChange(fplTeamId);
                                 setEditingFplId(false);
                               } catch (e) {
                                 alert("Failed to save FPL Team ID");

@@ -9,13 +9,14 @@ interface HeaderProps {
   authUser: any;
   tier: string;
   onSignOut: () => void;
+  setTeamId: (id: string) => void;
 }
 
 import { useState } from 'react';
 import { UserProfile } from './UserProfile';
 import { UserCircle, LogOut, User } from 'lucide-react';
 
-export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, tier, onSignOut }: HeaderProps) => {
+export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, tier, onSignOut, setTeamId }: HeaderProps) => {
   const [showProfile, setShowProfile] = useState(false);
   return (
     <header className="col-span-12 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between mb-4">
@@ -91,6 +92,7 @@ export const Header = ({ data, riskMode, setRiskMode, onOpenAuth, authUser, tier
                 }} 
                 onClose={() => setShowProfile(false)} 
                 onSignOut={onSignOut}
+                onTeamIdChange={setTeamId}
               />
             )}
           </>

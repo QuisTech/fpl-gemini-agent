@@ -29,6 +29,14 @@ export const useFPLData = (riskMode: 'safe' | 'aggressive' | 'value', userId: st
       axios.get(`/api/user?userId=${userId}`)
         .then(res => setTier(res.data.tier))
         .catch(console.error);
+
+      axios.get(`/api/user-profile?userId=${userId}`)
+        .then(res => {
+          if (res.data?.fplTeamId) {
+            setTeamId(res.data.fplTeamId);
+          }
+        })
+        .catch(() => {});
     }
   }, [userId]);
 

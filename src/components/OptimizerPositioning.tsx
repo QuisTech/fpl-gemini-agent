@@ -77,10 +77,11 @@ export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; 
 
       <section className="grid grid-cols-1 xl:grid-cols-4 gap-4">
         {optimizerPlans.map((plan) => {
+          const normalizedCurrentTier = currentTier === 'aiAgent' ? 'betaPilot' : currentTier;
           const tierHierarchy: Record<string, number> = { free: 0, strategist: 1, grandCru: 2, betaPilot: 3 };
-          const currentTierValue = tierHierarchy[currentTier] || 0;
+          const currentTierValue = tierHierarchy[normalizedCurrentTier] || 0;
           const planTierValue = tierHierarchy[plan.id] || 0;
-          const isIncluded = planTierValue < currentTierValue && currentTier !== 'free';
+          const isIncluded = planTierValue < currentTierValue && normalizedCurrentTier !== 'free';
 
           return (
           <div
@@ -114,7 +115,7 @@ export const OptimizerPositioning = ({ userId, currentTier }: { userId: string; 
               ))}
             </div>
 
-            {plan.id === currentTier ? (
+            {plan.id === normalizedCurrentTier ? (
               <button
                 disabled
                 className="mt-5 w-full rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors bg-slate-800 text-slate-400 cursor-not-allowed"
